@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaBot v2.0 - Professional Trading Signals Dashboard</title>
+    <meta name="description" content="Professional trading signals dashboard with real-time ROI tracking">
+    <meta name="author" content="Alex - Professional Calisthenics Athlete & Crypto Educator">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --primary-hover: #0066cc;
+            --bg-dark: #000000;
+            --bg-card: #111111;
+            --bg-card-hover: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #666666;
+            --border-color: #333333;
+            --border-hover: #444444;
+            --success-color: #00ff88;
+            --success-bg: rgba(0, 255, 136, 0.1);
+            --success-border: rgba(0, 255, 136, 0.2);
+            --danger-color: #ff0066;
+            --warning-color: #ffaa00;
+            --purple-color: #8b5cf6;
+            --green-color: #10b981;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .signal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .signal-card:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-card-hover);
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.15);
+        }
+        
+        .roi-positive {
+            color: var(--success-color);
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+        }
+        
+        .roi-neutral {
+            color: var(--text-secondary);
+            background: rgba(136, 136, 136, 0.1);
+            border: 1px solid rgba(136, 136, 136, 0.2);
+        }
+        
+        .chart-btn {
+            background: var(--primary-color);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        
+        /* Enhanced Alert Banner */
+        .alert-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #007AFF, #00C7FF);
+            color: white;
+            padding: 15px 20px;
+            transform: translateY(-100%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 25px rgba(0, 122, 255, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        
+        .alert-banner.show {
+            transform: translateY(0);
+        }
+        
+        .alert-banner .pulse-dot {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading-spinner {
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.3);
+        }
+        
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple-color), #7c3aed);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-green {
+            background: linear-gradient(135deg, var(--green-color), #059669);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-green:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online { 
+            background: var(--success-color); 
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
+        .status-offline { 
+            background: var(--danger-color); 
+            box-shadow: 0 0 8px rgba(255, 0, 102, 0.5);
+        }
+        .status-warning { 
+            background: var(--warning-color); 
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+        }
+        
+        /* Push content when banner is visible */
+        body.banner-visible {
+            padding-top: 70px;
+        }
+        
+        /* Enhanced form inputs */
+        .form-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Smooth animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Enhanced stats cards */
+        .stats-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--border-hover);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- ENHANCED ALERT BANNER -->
+    <div id="alert-banner" class="alert-banner">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center space-x-4">
+                <div class="pulse-dot w-4 h-4 bg-white rounded-full"></div>
+                <div>
+                    <span class="font-bold text-lg">🚨 NEW SIGNAL DETECTED</span>
+                    <span id="banner-signal-info" class="ml-3 text-blue-100"></span>
+                </div>
+            </div>
+            <button onclick="closeAlertBanner()" class="text-white hover:text-blue-200 transition-colors p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ENHANCED HEADER -->
+    <header class="bg-black border-b border-gray-800 px-6 py-6 sticky top-0 z-50 backdrop-blur-lg">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">AlphaBot</h1>
+                    <p class="text-sm text-gray-400">v2.0 Professional Edition</p>
+                </div>
+                <div class="flex space-x-2">
+                    <span class="text-xs bg-green-600 text-white px-3 py-1 rounded-full font-medium">LIVE</span>
+                    <span class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-medium">PRO</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connection-status" class="flex items-center space-x-3">
+                    <div id="status-dot" class="status-indicator status-offline"></div>
+                    <div>
+                        <span id="status-text" class="text-sm font-medium text-gray-300">Connecting...</span>
+                        <div class="text-xs text-gray-500">System Status</div>
+                    </div>
+                </div>
+                <!-- ENHANCED CONNECTION BUTTONS -->
+                <button id="connect-bot-btn" class="btn-primary px-6 py-3 rounded-xl text-white font-semibold flex items-center">
+                    <i class="fas fa-robot mr-2"></i>Connect Bot
+                </button>
+                <button id="connect-kol-btn" class="btn-purple px-6 py-3 rounded-xl text-white font-semibold flex items-center">
+                    <i class="fas fa-user-tie mr-2"></i>Connect KOL
+                </button>
+                <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-white transition-all duration-300">
+                    <i class="fas fa-cog text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ENHANCED CONFIGURATION PANEL -->
+    <div id="config-panel" class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700 hidden">
+        <div class="max-w-6xl mx-auto px-6 py-8">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                <i class="fas fa-cogs text-blue-500 mr-3"></i>
+                Professional Configuration Panel
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- BOT CONNECTION -->
+                <div class="signal-card p-6 fade-in">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-robot text-blue-500 mr-3"></i>
+                        Telegram Bot
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Bot Token</label>
+                            <input type="password" id="bot-token" placeholder="Enter your Telegram bot token..." 
+                                   class="form-input w-full">
+                        </div>
+                        <button id="connect-telegram-btn" class="btn-primary w-full py-3 rounded-lg font-semibold">
+                            <i class="fas fa-plug mr-2"></i>Connect Telegram Bot
+                        </button>
+                        <div id="bot-status-display" class="bg-gray-800 rounded-lg p-4 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300 font-medium">Connection Status:</span>
+                                <span id="bot-connection-status" class="text-red-400 font-semibold">Disconnected</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300 font-medium">Permissions:</span>
+                                <span id="bot-permissions-status" class="text-gray-500">Not verified</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOL CONNECTION -->
+                <div class="signal-card p-6 fade-in">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-user-tie text-purple-500 mr-3"></i>
+                        KOL Integration
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Channel/Group ID</label>
+                            <input type="text" id="kol-channel" placeholder="@channel or -1001234567890..." 
+                                   class="form-input w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">KOL Name</label>
+                            <input type="text" id="kol-name" placeholder="Alex (Crypto Educator)..." 
+                                   class="form-input w-full">
+                        </div>
+                        <button id="connect-kol-telegram-btn" class="btn-purple w-full py-3 rounded-lg font-semibold">
+                            <i class="fas fa-user-plus mr-2"></i>Add KOL Channel
+                        </button>
+                        <div id="kol-status-display" class="bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300 font-medium">Monitored Channels:</span>
+                                <span id="kol-channels-count" class="text-blue-400 font-bold text-xl">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADVANCED SETTINGS -->
+                <div class="signal-card p-6 fade-in">
+                    <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-cog text-green-500 mr-3"></i>
+                        Advanced Settings
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Detection Mode</label>
+                            <select id="detection-mode" class="form-input w-full">
+                                <option value="professional">Professional (Recommended)</option>
+                                <option value="strict">Strict Mode</option>
+                                <option value="flexible">Flexible Mode</option>
+                                <option value="ai">AI Enhanced</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="auto-roi" checked class="w-4 h-4 text-blue-500">
+                            <label for="auto-roi" class="text-gray-300 font-medium">Auto ROI Tracking</label>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="real-time-alerts" checked class="w-4 h-4 text-blue-500">
+                            <label for="real-time-alerts" class="text-gray-300 font-medium">Real-time Alert Banner</label>
+                        </div>
+                        <button id="test-connection-btn" class="btn-green w-full py-3 rounded-lg font-semibold">
+                            <i class="fas fa-flask mr-2"></i>Test All Connections
+                        </button>
+                        <div id="test-results" class="bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300 font-medium">Last Test:</span>
+                                <span id="last-test-time" class="text-gray-400">Never</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ENHANCED LIVE MONITORING -->
+            <div class="mt-8 signal-card p-6 fade-in">
+                <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-eye text-yellow-500 mr-3"></i>
+                    Professional Live Monitoring
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-400 mb-2" id="messages-processed">0</div>
+                        <div class="text-sm text-gray-400 font-medium">Messages Processed</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-400 mb-2" id="signals-found">0</div>
+                        <div class="text-sm text-gray-400 font-medium">Signals Detected</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-purple-400 mb-2" id="roi-updates">0</div>
+                        <div class="text-sm text-gray-400 font-medium">ROI Updates</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-yellow-400 mb-2" id="uptime-display">0h 0m</div>
+                        <div class="text-sm text-gray-400 font-medium">System Uptime</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-red-400 mb-2" id="live-connections">0</div>
+                        <div class="text-sm text-gray-400 font-medium">Live Connections</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <!-- ENHANCED STATS ROW -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-400 mb-1">Total Signals</p>
+                        <p id="total-signals" class="text-3xl font-bold text-white">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-signal text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-400 mb-1">Active Signals</p>
+                        <p id="active-signals" class="text-3xl font-bold text-green-400">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-400 mb-1">Average ROI</p>
+                        <p id="avg-roi" class="text-3xl font-bold text-blue-400">0%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-percentage text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-400 mb-1">Last Update</p>
+                        <p id="last-update" class="text-lg font-semibold text-gray-300">Loading...</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNALS SECTION -->
+        <div class="space-y-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold text-white">Professional Trading Signals</h2>
+                    <p class="text-gray-400 mt-1">Real-time detection with advanced ROI tracking</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="loading-spinner" class="loading-spinner hidden"></div>
+                    <button id="refresh-btn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-6 py-3 rounded-xl font-semibold transition-all duration-300">
+                        <i class="fas fa-refresh mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="signals-container" class="space-y-6">
+                <!-- Signals will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- NOTIFICATION CONTAINER -->
+    <div id="notification-container" class="fixed top-20 right-6 z-50 space-y-3"></div>
+
+    <!-- ENHANCED JAVASCRIPT -->
+    <script>
+        class AlphaBotApp {
+            constructor() {
+                this.signals = [];
+                this.eventSource = null;
+                this.botConnected = false;
+                this.stats = {};
+                this.init();
+            }
+
+            async init() {
+                console.log('🚀 AlphaBot v2.0 Professional Edition initializing...');
+                await this.loadSignals();
+                this.setupRealTimeUpdates();
+                this.setupEventListeners();
+                this.updateStats();
+                this.testBotConnection();
+                this.startStatsUpdater();
+            }
+
+            async loadSignals() {
+                try {
+                    this.showLoading(true);
+                    const response = await fetch('/api/signals/recent?limit=20');
+                    const data = await response.json();
+                    
+                    if (data.signals) {
+                        this.signals = data.signals;
+                        this.renderSignals();
+                        this.updateStats();
+                        console.log(\`📊 Loaded \${this.signals.length} signals\`);
+                        
+                        if (data.stats) {
+                            this.stats = { ...this.stats, ...data.stats };
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading signals:', error);
+                    this.showNotification('Error loading signals', 'error');
+                    this.updateConnectionStatus(false, 'API Error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async testBotConnection() {
+                try {
+                    console.log('🤖 Testing system connectivity...');
+                    
+                    const testResponse = await fetch('/api/telegram/test');
+                    const testData = await testResponse.json();
+                    
+                    if (testData.success) {
+                        this.updateConnectionStatus(true, 'System Online');
+                        console.log('✅ System connectivity verified');
+                    } else {
+                        this.updateConnectionStatus(false, 'System Offline');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ System connectivity test failed:', error);
+                    this.updateConnectionStatus(false, 'Connection Failed');
+                }
+            }
+
+            updateConnectionStatus(connected, statusText) {
+                const statusDot = document.getElementById('status-dot');
+                const statusTextEl = document.getElementById('status-text');
+                
+                if (statusDot && statusTextEl) {
+                    statusDot.className = \`status-indicator \${connected ? 'status-online' : 'status-offline'}\`;
+                    statusTextEl.textContent = statusText;
+                    this.botConnected = connected;
+                }
+            }
+
+            setupRealTimeUpdates() {
+                try {
+                    this.eventSource = new EventSource('/api/signals/stream');
+                    
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            console.log('📡 SSE message received:', data.type);
+                            
+                            switch (data.type) {
+                                case 'new_signal':
+                                    this.handleNewSignal(data.signal);
+                                    break;
+                                case 'roi_update':
+                                    this.handleROIUpdate(data.signalId, data.roiPercentage);
+                                    break;
+                                case 'bot_connected':
+                                    this.updateConnectionStatus(true, 'Bot Connected');
+                                    this.showNotification('🤖 Telegram bot connected!', 'success');
+                                    break;
+                                case 'connected':
+                                    console.log('📡 Real-time connection established');
+                                    break;
+                                case 'heartbeat':
+                                    // Connection is alive
+                                    break;
+                            }
+                        } catch (error) {
+                            console.error('❌ Error processing SSE message:', error);
+                        }
+                    };
+
+                    this.eventSource.onopen = () => {
+                        console.log('🔄 Real-time updates connected');
+                        this.updateConnectionStatus(true, 'Live Updates Active');
+                    };
+
+                    this.eventSource.onerror = (error) => {
+                        console.warn('⚠️ SSE connection error, will retry...', error);
+                        this.updateConnectionStatus(false, 'Connection Issues');
+                    };
+
+                } catch (error) {
+                    console.warn('⚠️ Real-time updates not available:', error);
+                }
+            }
+
+            handleNewSignal(signal) {
+                console.log('🚨 NEW SIGNAL DETECTED:', signal.token_symbol);
+                
+                this.signals.unshift(signal);
+                if (this.signals.length > 20) {
+                    this.signals = this.signals.slice(0, 20);
+                }
+                
+                this.renderSignals();
+                this.updateStats();
+                this.showAlertBanner(signal);
+                this.showNotification(\`🆕 New signal: $\${signal.token_symbol}\`, 'success');
+                
+                // Update live stats
+                document.getElementById('signals-found').textContent = (parseInt(document.getElementById('signals-found').textContent) + 1).toString();
+            }
+
+            handleROIUpdate(signalId, roiPercentage) {
+                const signalIndex = this.signals.findIndex(s => s.id === signalId);
+                if (signalIndex !== -1) {
+                    this.signals[signalIndex].roi_percentage = roiPercentage;
+                    this.renderSignals();
+                    this.updateStats();
+                    this.showNotification(\`💰 ROI updated: \${roiPercentage}%\`, 'success');
+                    console.log(\`💰 ROI updated for \${this.signals[signalIndex].token_symbol}: \${roiPercentage}%\`);
+                    
+                    // Update live stats
+                    document.getElementById('roi-updates').textContent = (parseInt(document.getElementById('roi-updates').textContent) + 1).toString();
+                }
+            }
+
+            showAlertBanner(signal) {
+                const autoAlerts = document.getElementById('real-time-alerts')?.checked !== false;
+                if (!autoAlerts) return;
+                
+                const banner = document.getElementById('alert-banner');
+                const signalInfo = document.getElementById('banner-signal-info');
+                
+                if (banner && signalInfo) {
+                    const entryPrice = signal.entry_mc ? this.formatMC(signal.entry_mc) : 'Market Cap TBD';
+                    signalInfo.innerHTML = \`<strong>$\${signal.token_symbol}</strong> - Entry: \${entryPrice}\`;
+                    
+                    banner.classList.add('show');
+                    document.body.classList.add('banner-visible');
+                    
+                    setTimeout(() => {
+                        this.closeAlertBanner();
+                    }, 12000);
+                }
+            }
+
+            closeAlertBanner() {
+                const banner = document.getElementById('alert-banner');
+                if (banner) {
+                    banner.classList.remove('show');
+                    document.body.classList.remove('banner-visible');
+                }
+            }
+
+            renderSignals() {
+                const container = document.getElementById('signals-container');
+                if (!container) return;
+
+                if (this.signals.length === 0) {
+                    container.innerHTML = \`
+                        <div class="signal-card p-12 text-center">
+                            <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-chart-line text-4xl text-gray-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-300 mb-4">No Trading Signals Yet</h3>
+                            <p class="text-gray-500 mb-6">Configure your Telegram bot to start detecting professional trading signals</p>
+                            <button onclick="document.getElementById('connect-bot-btn').click()" 
+                                    class="btn-primary px-8 py-4 rounded-xl font-semibold">
+                                <i class="fas fa-robot mr-2"></i>Configure Bot Now
+                            </button>
+                        </div>
+                    \`;
+                    return;
+                }
+
+                container.innerHTML = this.signals.map((signal, index) => this.renderSignalCard(signal, index)).join('');
+            }
+
+            renderSignalCard(signal, index) {
+                const roiClass = signal.roi_percentage > 0 ? 'roi-positive' : 'roi-neutral';
+                const roiText = signal.roi_percentage ? \`\${signal.roi_percentage}%\` : 'Pending';
+                const timeAgo = this.formatTimeAgo(signal.created_at);
+                
+                const chartButton = signal.dexscreener_link ? 
+                    \`<button onclick="window.open('\${signal.dexscreener_link}', '_blank')" class="chart-btn px-4 py-2 rounded-lg text-sm font-semibold">
+                        <i class="fas fa-chart-bar mr-1"></i>View Chart
+                    </button>\` : '';
+
+                const animationDelay = index * 0.1;
+                
+                return \`
+                    <div class="signal-card p-8 fade-in" style="animation-delay: \${animationDelay}s">
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="flex items-start space-x-6">
+                                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                    <span class="text-white font-bold text-lg">\${signal.token_symbol.substring(0, 3)}</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-white mb-2">$\${signal.token_symbol}</h3>
+                                    <p class="text-gray-400 mb-3">\${timeAgo}</p>
+                                    <div class="flex items-center space-x-3">
+                                        <span class="text-sm bg-gray-800 text-gray-300 px-4 py-2 rounded-full font-medium">
+                                            \${signal.entry_mc ? this.formatMC(signal.entry_mc) : 'Market Cap TBD'}
+                                        </span>
+                                        \${chartButton}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="\${roiClass} px-6 py-3 rounded-xl text-center min-w-[120px]">
+                                    <div class="text-lg font-bold">\${roiText}</div>
+                                    <div class="text-xs opacity-75 font-medium">ROI</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        \${signal.token_contract ? \`
+                            <div class="mt-6 p-4 bg-gray-900 rounded-xl">
+                                <p class="text-xs text-gray-400 mb-2 font-medium">Contract Address</p>
+                                <p class="text-sm text-gray-300 font-mono break-all">\${signal.token_contract}</p>
+                            </div>
+                        \` : ''}
+                    </div>
+                \`;
+            }
+
+            updateStats() {
+                const totalSignals = this.signals.length;
+                const activeSignals = this.signals.filter(s => s.status === 'active' || s.status === 'detected').length;
+                const roiSignals = this.signals.filter(s => s.roi_percentage !== null && s.roi_percentage !== undefined);
+                const avgROI = roiSignals.length > 0 ? 
+                    Math.round(roiSignals.reduce((sum, s) => sum + s.roi_percentage, 0) / roiSignals.length) : 0;
+
+                document.getElementById('total-signals').textContent = totalSignals;
+                document.getElementById('active-signals').textContent = activeSignals;
+                document.getElementById('avg-roi').textContent = \`\${avgROI}%\`;
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            }
+
+            startStatsUpdater() {
+                // Update live stats every 30 seconds
+                setInterval(async () => {
+                    try {
+                        const response = await fetch('/api/stats');
+                        const stats = await response.json();
+                        
+                        if (stats.bot) {
+                            document.getElementById('messages-processed').textContent = stats.bot.processed || '0';
+                            document.getElementById('uptime-display').textContent = stats.bot.uptime || '0h 0m';
+                        }
+                        
+                        if (stats.server) {
+                            document.getElementById('live-connections').textContent = stats.server.sseConnections || '0';
+                        }
+                    } catch (error) {
+                        console.error('❌ Error updating stats:', error);
+                    }
+                }, 30000);
+            }
+
+            setupEventListeners() {
+                const refreshBtn = document.getElementById('refresh-btn');
+                refreshBtn?.addEventListener('click', () => this.loadSignals());
+
+                const connectBotBtn = document.getElementById('connect-bot-btn');
+                connectBotBtn?.addEventListener('click', () => this.toggleConfigPanel());
+
+                const connectKolBtn = document.getElementById('connect-kol-btn');
+                connectKolBtn?.addEventListener('click', () => this.toggleConfigPanel());
+
+                const settingsBtn = document.getElementById('settings-btn');
+                settingsBtn?.addEventListener('click', () => this.toggleConfigPanel());
+
+                const connectTelegramBtn = document.getElementById('connect-telegram-btn');
+                connectTelegramBtn?.addEventListener('click', () => this.connectTelegramBot());
+
+                const connectKolTelegramBtn = document.getElementById('connect-kol-telegram-btn');
+                connectKolTelegramBtn?.addEventListener('click', () => this.addKolChannel());
+
+                const testConnectionBtn = document.getElementById('test-connection-btn');
+                testConnectionBtn?.addEventListener('click', () => this.testAllConnections());
+            }
+
+            toggleConfigPanel() {
+                const panel = document.getElementById('config-panel');
+                if (panel) {
+                    panel.classList.toggle('hidden');
+                    if (!panel.classList.contains('hidden')) {
+                        this.testBotConnection();
+                    }
+                }
+            }
+
+            async connectTelegramBot() {
+                const tokenInput = document.getElementById('bot-token');
+                const connectBtn = document.getElementById('connect-telegram-btn');
+                const statusDisplay = document.getElementById('bot-connection-status');
+                
+                if (!tokenInput?.value?.trim()) {
+                    this.showNotification('Please enter a valid bot token', 'error');
+                    return;
+                }
+
+                try {
+                    connectBtn.textContent = 'Connecting...';
+                    connectBtn.disabled = true;
+                    
+                    const response = await fetch('/api/telegram/connect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: tokenInput.value.trim() })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        statusDisplay.textContent = 'Connected';
+                        statusDisplay.className = 'text-green-400 font-semibold';
+                        this.showNotification('🤖 Telegram bot connected successfully!', 'success');
+                        this.updateConnectionStatus(true, 'Bot Connected');
+                    } else {
+                        statusDisplay.textContent = 'Connection Failed';
+                        statusDisplay.className = 'text-red-400 font-semibold';
+                        this.showNotification(\`❌ Connection failed: \${result.error}\`, 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Bot connection error:', error);
+                    statusDisplay.textContent = 'Connection Error';
+                    statusDisplay.className = 'text-red-400 font-semibold';
+                    this.showNotification('❌ Connection error. Please try again.', 'error');
+                } finally {
+                    connectBtn.textContent = 'Connect Telegram Bot';
+                    connectBtn.disabled = false;
+                }
+            }
+
+            async addKolChannel() {
+                const channelInput = document.getElementById('kol-channel');
+                const nameInput = document.getElementById('kol-name');
+                const connectBtn = document.getElementById('connect-kol-telegram-btn');
+                
+                if (!channelInput?.value?.trim()) {
+                    this.showNotification('Please enter a channel ID or username', 'error');
+                    return;
+                }
+
+                try {
+                    connectBtn.textContent = 'Adding...';
+                    connectBtn.disabled = true;
+                    
+                    const response = await fetch('/api/telegram/add-channel', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            channel: channelInput.value.trim(),
+                            name: nameInput?.value?.trim() || 'Professional KOL'
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showNotification(\`✅ KOL channel added: \${channelInput.value}\`, 'success');
+                        channelInput.value = '';
+                        nameInput.value = '';
+                        
+                        const countEl = document.getElementById('kol-channels-count');
+                        if (countEl) {
+                            countEl.textContent = result.channelCount || '1';
+                        }
+                    } else {
+                        this.showNotification(\`❌ Failed to add channel: \${result.error}\`, 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ KOL channel add error:', error);
+                    this.showNotification('❌ Error adding channel. Please try again.', 'error');
+                } finally {
+                    connectBtn.textContent = 'Add KOL Channel';
+                    connectBtn.disabled = false;
+                }
+            }
+
+            async testAllConnections() {
+                const testBtn = document.getElementById('test-connection-btn');
+                const lastTestEl = document.getElementById('last-test-time');
+                
+                try {
+                    testBtn.textContent = 'Testing...';
+                    testBtn.disabled = true;
+                    
+                    await this.testBotConnection();
+                    
+                    const debugResponse = await fetch('/api/telegram/debug');
+                    const debugData = await debugResponse.json();
+                    
+                    if (debugData.success) {
+                        document.getElementById('messages-processed').textContent = debugData.messagesProcessed || '0';
+                        document.getElementById('signals-found').textContent = this.signals.length || '0';
+                        document.getElementById('uptime-display').textContent = debugData.botUptime || '0h 0m';
+                        
+                        this.showNotification('✅ All connections tested successfully!', 'success');
+                    }
+                    
+                    if (lastTestEl) {
+                        lastTestEl.textContent = new Date().toLocaleTimeString();
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Connection test error:', error);
+                    this.showNotification('❌ Connection test failed', 'error');
+                } finally {
+                    testBtn.textContent = 'Test All Connections';
+                    testBtn.disabled = false;
+                }
+            }
+
+            showLoading(show) {
+                const spinner = document.getElementById('loading-spinner');
+                if (spinner) {
+                    spinner.style.display = show ? 'block' : 'none';
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notification-container');
+                if (!container) return;
+
+                const colors = {
+                    success: 'bg-green-600 border-green-500',
+                    error: 'bg-red-600 border-red-500',
+                    info: 'bg-blue-600 border-blue-500'
+                };
+
+                const notification = document.createElement('div');
+                notification.className = \`notification \${colors[type]} text-white px-6 py-4 rounded-xl shadow-xl border-l-4 max-w-sm\`;
+                notification.innerHTML = \`
+                    <div class="flex items-center">
+                        <span class="flex-1">\${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                \`;
+
+                container.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 6000);
+            }
+
+            formatTimeAgo(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+                if (diffInMinutes < 1) return 'Just now';
+                if (diffInMinutes < 60) return \`\${diffInMinutes}m ago\`;
+                if (diffInMinutes < 1440) return \`\${Math.floor(diffInMinutes / 60)}h ago\`;
+                return \`\${Math.floor(diffInMinutes / 1440)}d ago\`;
+            }
+
+            formatMC(mc) {
+                if (mc >= 1000000000) return \`\${(mc / 1000000000).toFixed(1)}B MC\`;
+                if (mc >= 1000000) return \`\${(mc / 1000000).toFixed(1)}M MC\`;
+                if (mc >= 1000) return \`\${(mc / 1000).toFixed(0)}K MC\`;
+                return \`\${mc} MC\`;
+            }
+        }
+
+        // Global functions
+        function closeAlertBanner() {
+            if (window.alphaBotApp) {
+                window.alphaBotApp.closeAlertBanner();
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.alphaBotApp = new AlphaBotApp();
+        });
+    </script>
+</body>
+</html>
