@@ -733,6 +733,9 @@
                 const container = document.getElementById('signals-container');
                 if (!container) return;
 
+                console.log('🔧 DEBUG renderSignals: signals count =', this.signals.length);
+                console.log('🔧 DEBUG renderSignals: signals data =', this.signals);
+
                 if (this.signals.length === 0) {
                     container.innerHTML = `
                         <div class="signal-card p-12 text-center">
@@ -750,7 +753,20 @@
                     return;
                 }
 
-                container.innerHTML = this.signals.map((signal, index) => this.renderSignalCard(signal, index)).join('');
+                const renderedHTML = this.signals.map((signal, index) => this.renderSignalCard(signal, index)).join('');
+                console.log('🔧 DEBUG: Generated HTML length:', renderedHTML.length);
+                console.log('🔧 DEBUG: First 200 chars:', renderedHTML.substring(0, 200));
+                container.innerHTML = renderedHTML;
+                console.log('🔧 DEBUG: Container after innerHTML:', container.innerHTML.length);
+                
+                // Force scroll to signals container to make them visible
+                setTimeout(() => {
+                    const container = document.getElementById('signals-container');
+                    if (container) {
+                        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        console.log('🔧 DEBUG: Scrolled to signals container');
+                    }
+                }, 1000);
             }
 
             renderSignalCard(signal, index) {
@@ -766,7 +782,7 @@
                 const animationDelay = index * 0.1;
                 
                 return `
-                    <div class="signal-card p-8 fade-in" style="animation-delay: ${animationDelay}s">
+                    <div class="signal-card p-8 fade-in" style="animation-delay: ${animationDelay}s;">
                         <div class="flex items-start justify-between mb-6">
                             <div class="flex items-start space-x-6">
                                 <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">

@@ -734,22 +734,36 @@ app.get('/api/custodial/trades/:userId', async (req, res) => {
         const { userId } = req.params;
         const limit = parseInt(req.query.limit) || 20;
         
-        const trades = db.prepare(`
+        const query = `
             SELECT at.*, cw.public_key as wallet_address
             FROM automated_trades at
             JOIN custodial_wallets cw ON at.wallet_id = cw.id
             WHERE cw.user_id = ?
             ORDER BY at.created_at DESC
             LIMIT ?
-        `).all(userId, limit);
+        `;
         
-        res.json({
-            success: true,
-            data: {
-                trades: trades,
-                count: trades.length
-            },
-            timestamp: new Date().toISOString()
+        // Use sqlite3 callback syntax instead of better-sqlite3 sync syntax
+        db.all(query, [userId, limit], (err, trades) => {
+            if (err) {
+                console.error('❌ Error getting trading history:', err);
+                return res.status(500).json({
+                    success: false,
+                    error: err.message,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            console.log(`📊 Trading history query for user ${userId}: ${trades.length} trades found`);
+            
+            res.json({
+                success: true,
+                data: {
+                    trades: trades,
+                    count: trades.length
+                },
+                timestamp: new Date().toISOString()
+            });
         });
         
     } catch (error) {
