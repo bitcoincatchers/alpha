@@ -1,0 +1,23 @@
+[package]
+name = "alphabot-fee-contract"
+version = "1.0.0"
+edition = "2021"
+description = "AlphaBot Fee Collection Smart Contract for Solana"
+author = "Alex - Professional Calisthenics Athlete & Crypto Educator"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+solana-program = "1.16"
+spl-token = "4.0"
+borsh = "0.10"
+thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[features]
+no-entrypoint = []
+
+[[bin]]
+name = "alphabot-fee-contract"
+path = "src/bin.rs"

@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaBot Auto Trading - Professional Automated Trading</title>
+    <meta name="description" content="Professional automated trading with custodial wallets and advanced strategies">
+    <meta name="author" content="Alex - Professional Calisthenics Athlete & Crypto Educator">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Solana Web3.js for blockchain transactions -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --primary-hover: #0066cc;
+            --bg-dark: #000000;
+            --bg-card: #111111;
+            --bg-card-hover: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #666666;
+            --border-color: #333333;
+            --border-hover: #444444;
+            --success-color: #00ff88;
+            --success-bg: rgba(0, 255, 136, 0.1);
+            --success-border: rgba(0, 255, 136, 0.2);
+            --danger-color: #ff0066;
+            --warning-color: #ffaa00;
+            --purple-color: #8b5cf6;
+            --green-color: #10b981;
+            --orange-color: #f59e0b;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-card-hover);
+            box-shadow: 0 8px 30px rgba(0, 122, 255, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--green-color), #059669);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--orange-color), #d97706);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+        
+        .form-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        .strategy-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .strategy-card.selected {
+            border-color: var(--success-color);
+            background: var(--success-bg);
+        }
+        
+        .strategy-card.selected::before {
+            content: '✓';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 24px;
+            height: 24px;
+            background: var(--success-color);
+            color: var(--bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .pulse-dot {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- HEADER -->
+    <header class="bg-black border-b border-gray-800 px-6 py-6 sticky top-0 z-50 backdrop-blur-lg">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">AlphaBot Auto Trading</h1>
+                    <p class="text-sm text-gray-400">Professional Automated Trading System</p>
+                </div>
+                <div class="flex space-x-2">
+                    <span class="text-xs bg-orange-600 text-white px-3 py-1 rounded-full font-medium">AUTO</span>
+                    <span class="text-xs bg-green-600 text-white px-3 py-1 rounded-full font-medium">CUSTODIAL</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="wallet-status" class="flex items-center space-x-3">
+                    <div id="status-dot" class="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div>
+                        <span id="status-text" class="text-sm font-medium text-gray-300">No Wallet</span>
+                        <div class="text-xs text-gray-500">Custodial Status</div>
+                    </div>
+                </div>
+                <button id="disconnect-wallet-btn" class="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-xl text-white transition-all duration-300 hidden">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Disconnect
+                </button>
+                <a href="/" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-white transition-all duration-300">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Signals
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <!-- WALLET SETUP SECTION -->
+        <div id="wallet-setup-section" class="mb-8">
+            <div class="card p-8 fade-in">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-wallet text-3xl text-white"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold gradient-text mb-4">Create Your Custodial Wallet</h2>
+                    <p class="text-gray-400 max-w-2xl mx-auto">
+                        Get started with automated trading by creating a secure custodial wallet. 
+                        Your funds are protected with PIN-based encryption and stored securely on our servers.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- CREATE WALLET FORM -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Create New Wallet</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">User ID</label>
+                                <input type="text" id="user-id" placeholder="alex_crypto_trader" class="form-input w-full">
+                                <div class="text-xs text-gray-500 mt-1">Choose a unique identifier (letters, numbers, underscores only)</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Telegram Username <span class="text-gray-500 text-xs">(optional)</span></label>
+                                <input type="text" id="telegram-username" placeholder="@alex_crypto (optional)" class="form-input w-full">
+                                <div class="text-xs text-gray-500 mt-1">Optional: Your Telegram username for easier identification</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">6-Digit PIN</label>
+                                <input type="password" id="wallet-pin" placeholder="Create a 6-digit PIN..." maxlength="6" class="form-input w-full">
+                                <div class="text-xs text-gray-500 mt-1">This PIN encrypts your wallet. Don't lose it!</div>
+                            </div>
+                        </div>
+                        <button id="create-wallet-btn" class="btn-success w-full py-4 rounded-xl text-white font-semibold text-lg">
+                            <i class="fas fa-plus mr-2"></i>Create Custodial Wallet
+                        </button>
+                    </div>
+
+                    <!-- LOGIN FORM -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Access Existing Wallet</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">User ID</label>
+                                <input type="text" id="login-user-id" placeholder="Enter your user ID..." class="form-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">6-Digit PIN</label>
+                                <input type="password" id="login-pin" placeholder="Enter your PIN..." maxlength="6" class="form-input w-full">
+                            </div>
+                        </div>
+                        <button id="login-wallet-btn" class="btn-primary w-full py-4 rounded-xl text-white font-semibold text-lg">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Access Wallet
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FEATURES INFO -->
+                <div class="mt-8 p-6 bg-blue-900 bg-opacity-20 rounded-lg border border-blue-800">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-shield-alt text-blue-400 mt-1"></i>
+                        <div class="text-sm text-blue-200">
+                            <div class="font-semibold mb-2">Custodial Wallet Features:</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li><strong>Automated Trading:</strong> No manual confirmations needed</li>
+                                <li><strong>Secure Encryption:</strong> Your keys are encrypted with your PIN</li>
+                                <li><strong>Simple Setup:</strong> Just User ID and PIN required</li>
+                                <li><strong>Professional Strategies:</strong> Trenches and DCA modes</li>
+                                <li><strong>10% Trading Fees:</strong> Competitive fees for automation</li>
+                                <li><strong>3% Withdrawal Fees:</strong> Low cost to move your funds</li>
+                                <li><strong>24/7 Operation:</strong> Trades execute even when you're offline</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRADING DASHBOARD (Hidden until wallet is authenticated) -->
+        <div id="trading-dashboard" class="hidden">
+            <!-- WALLET INFO -->
+            <div class="card p-6 mb-8 fade-in">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-wallet text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-400">Custodial Wallet</div>
+                            <div class="flex items-center space-x-3">
+                                <div id="wallet-address" class="text-lg font-bold text-green-400 font-mono">Loading...</div>
+                                <button id="copy-wallet-btn" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-lg text-white text-sm transition-all duration-300 opacity-0">
+                                    <i class="fas fa-copy mr-1"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-400">Balance</div>
+                        <div id="wallet-balance" class="text-2xl font-bold text-white">0.000 SOL</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRADING STRATEGIES -->
+            <div class="card p-8 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-chart-line text-orange-500 mr-3"></i>
+                    Trading Strategies
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- TRENCHES MODE -->
+                    <div id="trenches-strategy" class="strategy-card card p-6 cursor-pointer selected">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-layer-group text-white"></i>
+                            </div>
+                            <div class="text-sm bg-green-600 text-white px-3 py-1 rounded-full">ACTIVE</div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Trenches Mode</h3>
+                        <p class="text-gray-400 mb-4">Conservative profit-taking strategy</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-400"></i>
+                                <span class="text-gray-300">Buy at entry price</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-400"></i>
+                                <span class="text-gray-300">Sell 50% at 2x profit</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-400"></i>
+                                <span class="text-gray-300">Hold rest until custom target</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DCA MODE (Coming Soon) -->
+                    <div id="dca-strategy" class="strategy-card card p-6 cursor-pointer opacity-50">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-chart-bar text-white"></i>
+                            </div>
+                            <div class="text-sm bg-gray-600 text-gray-300 px-3 py-1 rounded-full">COMING SOON</div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">DCA Mode</h3>
+                        <p class="text-gray-400 mb-4">Dollar cost averaging on dips</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-clock text-gray-500"></i>
+                                <span class="text-gray-500">Buy at entry price</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-clock text-gray-500"></i>
+                                <span class="text-gray-500">Buy more on 50% dip</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-clock text-gray-500"></i>
+                                <span class="text-gray-500">Average cost basis</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRADE CONFIGURATION -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Trade Configuration</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Trade Amount (SOL)</label>
+                            <input type="number" id="trade-amount" value="0.1" min="0.001" step="0.001" class="form-input w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Custom Sell Target (optional)</label>
+                            <select id="sell-target" class="form-input w-full">
+                                <option value="">Auto (4x)</option>
+                                <option value="3">3x</option>
+                                <option value="5">5x</option>
+                                <option value="10">10x</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Stop Loss (%)</label>
+                            <input type="number" id="stop-loss" value="20" min="5" max="50" class="form-input w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TEST TRADING -->
+            <div class="card p-8 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-flask text-yellow-500 mr-3"></i>
+                    Test Automated Trading
+                </h2>
+                
+                <div class="bg-yellow-900 bg-opacity-20 rounded-lg p-6 mb-6 border border-yellow-800">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+                        <div class="text-sm text-yellow-200">
+                            <div class="font-semibold mb-1">Devnet Testing Mode</div>
+                            <p>This is running on Solana devnet for safe testing. No real money is used. 
+                            You can get free devnet SOL from faucets to test the system.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <button id="test-trade-btn" class="btn-warning w-full py-4 rounded-xl text-white font-semibold text-lg" disabled>
+                        <i class="fas fa-play mr-2"></i>Execute Test Trade
+                        <div class="text-sm opacity-75 mt-1">Simulates buying a token with your configured strategy</div>
+                    </button>
+                    
+                    <button id="simple-test-btn" class="bg-purple-600 hover:bg-purple-700 w-full py-3 rounded-xl text-white font-semibold" disabled>
+                        <i class="fas fa-vial mr-2"></i>Simple Test (Debug)
+                        <div class="text-sm opacity-75 mt-1">Quick test with console logging</div>
+                    </button>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="get-devnet-sol-btn" class="bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-white font-semibold">
+                            <i class="fas fa-faucet mr-2"></i>Get Devnet SOL
+                        </button>
+                        <button id="refresh-balance-btn" class="bg-gray-600 hover:bg-gray-700 py-3 rounded-xl text-white font-semibold">
+                            <i class="fas fa-sync mr-2"></i>Refresh Balance
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRADING HISTORY -->
+            <div class="card p-8 fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center">
+                        <i class="fas fa-history text-purple-500 mr-3"></i>
+                        Trading History
+                    </h2>
+                    <button id="refresh-history-btn" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm font-medium transition-all duration-300">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh History
+                    </button>
+                </div>
+                
+                <div id="trading-history-container">
+                    <div class="text-center text-gray-400 py-12">
+                        <i class="fas fa-chart-line text-4xl text-gray-600 mb-4"></i>
+                        <p>No trades executed yet. Start trading to see your history here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- NOTIFICATION CONTAINER -->
+    <div id="notification-container" class="fixed top-20 right-6 z-50 space-y-3"></div>
+
+    <script>
+        class AutoTradingApp {
+            constructor() {
+                this.currentWallet = null;
+                this.selectedStrategy = 'trenches';
+                this.isAuthenticated = false;
+                this.init();
+            }
+
+            init() {
+                console.log('🤖 AlphaBot Auto Trading initializing...');
+                this.setupEventListeners();
+                this.checkExistingSession();
+                this.updateUI();
+            }
+
+            setupEventListeners() {
+                // Wallet creation
+                const createWalletBtn = document.getElementById('create-wallet-btn');
+                if (createWalletBtn) {
+                    createWalletBtn.addEventListener('click', () => this.createWallet());
+                }
+
+                // Wallet login
+                const loginWalletBtn = document.getElementById('login-wallet-btn');
+                if (loginWalletBtn) {
+                    loginWalletBtn.addEventListener('click', () => this.loginWallet());
+                }
+
+                // Strategy selection
+                const trenchesStrategy = document.getElementById('trenches-strategy');
+                if (trenchesStrategy) {
+                    trenchesStrategy.addEventListener('click', () => this.selectStrategy('trenches'));
+                }
+
+                // Test trading
+                const testTradeBtn = document.getElementById('test-trade-btn');
+                if (testTradeBtn) {
+                    testTradeBtn.addEventListener('click', () => this.executeTestTrade());
+                }
+
+                // Simple test (debug)
+                const simpleTestBtn = document.getElementById('simple-test-btn');
+                if (simpleTestBtn) {
+                    simpleTestBtn.addEventListener('click', () => this.executeSimpleTest());
+                }
+
+                // Utility buttons
+                const getDevnetSolBtn = document.getElementById('get-devnet-sol-btn');
+                if (getDevnetSolBtn) {
+                    getDevnetSolBtn.addEventListener('click', () => this.getDevnetSol());
+                }
+
+                const refreshBalanceBtn = document.getElementById('refresh-balance-btn');
+                if (refreshBalanceBtn) {
+                    refreshBalanceBtn.addEventListener('click', () => this.refreshBalance());
+                }
+
+                // Disconnect wallet
+                const disconnectWalletBtn = document.getElementById('disconnect-wallet-btn');
+                if (disconnectWalletBtn) {
+                    disconnectWalletBtn.addEventListener('click', () => this.disconnectWallet());
+                }
+
+                // Copy wallet address
+                const copyWalletBtn = document.getElementById('copy-wallet-btn');
+                if (copyWalletBtn) {
+                    copyWalletBtn.addEventListener('click', () => this.copyWalletAddress());
+                }
+
+                // Refresh trading history
+                const refreshHistoryBtn = document.getElementById('refresh-history-btn');
+                if (refreshHistoryBtn) {
+                    refreshHistoryBtn.addEventListener('click', () => this.refreshTradingHistory());
+                }
+
+                console.log('✅ Auto Trading event listeners setup completed');
+            }
+
+            async createWallet() {
+                const userId = document.getElementById('user-id').value.trim();
+                const telegramUsername = document.getElementById('telegram-username').value.trim();
+                const pin = document.getElementById('wallet-pin').value.trim();
+
+                if (!userId || !pin) {
+                    this.showNotification('Please fill in User ID and PIN (Telegram username is optional)', 'error');
+                    return;
+                }
+
+                if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                    this.showNotification('PIN must be exactly 6 digits', 'error');
+                    return;
+                }
+
+                try {
+                    const createBtn = document.getElementById('create-wallet-btn');
+                    createBtn.disabled = true;
+                    createBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating Wallet...';
+
+                    const response = await fetch('/api/custodial/create-wallet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, telegramUsername, pin })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.showNotification('✅ Custodial wallet created successfully!', 'success');
+                        
+                        // Show mnemonic backup
+                        const mnemonic = result.data.mnemonic;
+                        const walletAddress = result.data.publicKey;
+                        this.showMnemonicBackup(mnemonic, walletAddress);
+                        
+                        // Clear form
+                        document.getElementById('user-id').value = '';
+                        document.getElementById('telegram-username').value = '';
+                        document.getElementById('wallet-pin').value = '';
+                        
+                        // Auto-populate login form
+                        document.getElementById('login-user-id').value = userId;
+                        document.getElementById('login-pin').value = pin;
+                        
+                        // Show success message about auto-login
+                        setTimeout(() => {
+                            this.showNotification('💡 Login form filled automatically. Click "Access Wallet" when ready!', 'info');
+                        }, 3000);
+
+                    } else {
+                        let errorMsg = result.error || 'Unknown wallet creation error';
+                        
+                        // Provide helpful error messages
+                        if (errorMsg.includes('already has a custodial wallet')) {
+                            errorMsg = 'This User ID is already taken. Please choose a different User ID or use the login form to access your existing wallet.';
+                        } else if (errorMsg.includes('PIN must be exactly 6 digits')) {
+                            errorMsg = 'PIN must be exactly 6 digits (numbers only). Please try again.';
+                        }
+                        
+                        this.showNotification(`❌ ${errorMsg}`, 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Wallet creation error:', error);
+                    this.showNotification('❌ Error creating wallet. Please try again.', 'error');
+                } finally {
+                    const createBtn = document.getElementById('create-wallet-btn');
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Create Custodial Wallet';
+                }
+            }
+
+            async loginWallet() {
+                const userId = document.getElementById('login-user-id').value.trim();
+                const pin = document.getElementById('login-pin').value.trim();
+
+                if (!userId || !pin) {
+                    this.showNotification('Please enter User ID and PIN', 'error');
+                    return;
+                }
+
+                try {
+                    const loginBtn = document.getElementById('login-wallet-btn');
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Authenticating...';
+
+                    const response = await fetch('/api/custodial/authenticate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, pin })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.currentWallet = {
+                            userId: userId,
+                            pin: pin, // Store for trading operations
+                            ...result.data
+                        };
+                        this.isAuthenticated = true;
+                        
+                        // Save session to localStorage for persistence
+                        this.saveWalletSession();
+                        
+                        this.showNotification('✅ Wallet authenticated successfully!', 'success');
+                        this.showTradingDashboard();
+                        this.loadTradingHistory();
+
+                    } else {
+                        let errorMsg = result.error || 'Unknown authentication error';
+                        
+                        // Provide helpful error messages
+                        if (errorMsg.includes('No custodial wallet found')) {
+                            errorMsg = 'User ID not found. Please create a wallet first or check your User ID.';
+                        } else if (errorMsg.includes('Invalid PIN')) {
+                            errorMsg = 'Incorrect PIN. Please check your 6-digit PIN and try again.';
+                        }
+                        
+                        this.showNotification(`❌ ${errorMsg}`, 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Wallet authentication error:', error);
+                    this.showNotification('❌ Error authenticating wallet. Please try again.', 'error');
+                } finally {
+                    const loginBtn = document.getElementById('login-wallet-btn');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Access Wallet';
+                }
+            }
+
+            showTradingDashboard() {
+                // Hide wallet setup section
+                document.getElementById('wallet-setup-section').classList.add('hidden');
+                
+                // Show trading dashboard
+                document.getElementById('trading-dashboard').classList.remove('hidden');
+                
+                // Update wallet info
+                this.updateWalletDisplay();
+                
+                // Update status
+                this.updateStatus();
+                
+                // Enable test trade buttons
+                const testTradeBtn = document.getElementById('test-trade-btn');
+                if (testTradeBtn) {
+                    testTradeBtn.disabled = false;
+                }
+                
+                const simpleTestBtn = document.getElementById('simple-test-btn');
+                if (simpleTestBtn) {
+                    simpleTestBtn.disabled = false;
+                }
+            }
+
+            updateWalletDisplay() {
+                if (!this.currentWallet) return;
+
+                const addressEl = document.getElementById('wallet-address');
+                const balanceEl = document.getElementById('wallet-balance');
+                const copyWalletBtn = document.getElementById('copy-wallet-btn');
+
+                if (addressEl) {
+                    const shortAddress = `${this.currentWallet.publicKey.slice(0, 8)}...${this.currentWallet.publicKey.slice(-8)}`;
+                    addressEl.textContent = shortAddress;
+                }
+
+                if (balanceEl) {
+                    balanceEl.textContent = `${this.currentWallet.balance.toFixed(3)} SOL`;
+                }
+
+                // Show copy button when wallet is loaded
+                if (copyWalletBtn) {
+                    copyWalletBtn.classList.remove('opacity-0');
+                    copyWalletBtn.classList.add('opacity-100');
+                }
+            }
+
+            copyWalletAddress() {
+                if (!this.currentWallet || !this.currentWallet.publicKey) {
+                    this.showNotification('❌ No wallet address available to copy', 'error');
+                    return;
+                }
+
+                const copyBtn = document.getElementById('copy-wallet-btn');
+                const originalHTML = copyBtn.innerHTML;
+
+                navigator.clipboard.writeText(this.currentWallet.publicKey).then(() => {
+                    // Update button to show success
+                    copyBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                    copyBtn.className = 'bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-lg text-white text-sm transition-all duration-300';
+                    
+                    this.showNotification('📋 Wallet address copied to clipboard!', 'success');
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHTML;
+                        copyBtn.className = 'bg-green-600 hover:bg-green-700 px-3 py-1 rounded-lg text-white text-sm transition-all duration-300';
+                    }, 2000);
+                }).catch(error => {
+                    console.error('Failed to copy wallet address:', error);
+                    this.showNotification('❌ Failed to copy wallet address', 'error');
+                });
+            }
+
+            updateStatus() {
+                const statusDot = document.getElementById('status-dot');
+                const statusText = document.getElementById('status-text');
+                const disconnectBtn = document.getElementById('disconnect-wallet-btn');
+
+                if (this.isAuthenticated) {
+                    statusDot.className = 'w-3 h-3 bg-green-500 rounded-full pulse-dot';
+                    statusText.textContent = 'Wallet Active';
+                    if (disconnectBtn) {
+                        disconnectBtn.classList.remove('hidden');
+                    }
+                } else {
+                    statusDot.className = 'w-3 h-3 bg-red-500 rounded-full';
+                    statusText.textContent = 'No Wallet';
+                    if (disconnectBtn) {
+                        disconnectBtn.classList.add('hidden');
+                    }
+                }
+            }
+
+            disconnectWallet() {
+                // Confirm disconnection
+                if (!confirm('¿Estás seguro de que quieres desconectar tu wallet? Tendrás que autenticarte nuevamente.')) {
+                    return;
+                }
+
+                // Clear wallet data
+                this.currentWallet = null;
+                this.isAuthenticated = false;
+
+                // Clear saved session
+                this.clearWalletSession();
+
+                // Clear form fields
+                document.getElementById('login-user-id').value = '';
+                document.getElementById('login-pin').value = '';
+                document.getElementById('user-id').value = '';
+                document.getElementById('telegram-username').value = '';
+                document.getElementById('wallet-pin').value = '';
+
+                // Hide trading dashboard and show wallet setup
+                document.getElementById('trading-dashboard').classList.add('hidden');
+                document.getElementById('wallet-setup-section').classList.remove('hidden');
+
+                // Update status
+                this.updateStatus();
+
+                // Show notification
+                this.showNotification('🔌 Wallet disconnected successfully. You can now connect a different wallet.', 'info');
+
+                console.log('🔌 Wallet disconnected');
+            }
+
+            selectStrategy(strategy) {
+                this.selectedStrategy = strategy;
+                
+                // Update UI
+                document.querySelectorAll('.strategy-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                const selectedCard = document.getElementById(`${strategy}-strategy`);
+                if (selectedCard) {
+                    selectedCard.classList.add('selected');
+                }
+                
+                console.log(`🎯 Strategy selected: ${strategy}`);
+            }
+
+            async executeTestTrade() {
+                console.log('🔧 DEBUG: executeTestTrade called');
+                console.log('🔧 DEBUG: isAuthenticated:', this.isAuthenticated);
+                console.log('🔧 DEBUG: currentWallet:', this.currentWallet);
+                
+                if (!this.isAuthenticated || !this.currentWallet) {
+                    this.showNotification('❌ Please authenticate your wallet first', 'error');
+                    return;
+                }
+
+                const tradeAmount = parseFloat(document.getElementById('trade-amount').value);
+                const sellTarget = document.getElementById('sell-target').value;
+                const stopLoss = parseFloat(document.getElementById('stop-loss').value);
+
+                console.log('🔧 DEBUG: tradeAmount:', tradeAmount);
+                console.log('🔧 DEBUG: sellTarget:', sellTarget);
+                console.log('🔧 DEBUG: stopLoss:', stopLoss);
+
+                if (tradeAmount < 0.001) {
+                    this.showNotification('❌ Minimum trade amount is 0.001 SOL', 'error');
+                    return;
+                }
+
+                // Ask for PIN confirmation for security
+                console.log('🔧 DEBUG: Asking for PIN...');
+                const pin = prompt('🔐 Enter your 6-digit PIN to confirm this trade:');
+                console.log('🔧 DEBUG: PIN entered, length:', pin ? pin.length : 'null');
+                
+                if (!pin || pin.length !== 6) {
+                    console.log('🔧 DEBUG: Invalid PIN, returning');
+                    this.showNotification('❌ Valid 6-digit PIN required to execute trade', 'error');
+                    return;
+                }
+
+                try {
+                    const testTradeBtn = document.getElementById('test-trade-btn');
+                    testTradeBtn.disabled = true;
+                    testTradeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Executing Trade...';
+
+                    // Create test signal
+                    const testSignal = {
+                        id: Date.now(),
+                        token_symbol: 'TEST',
+                        token_contract: 'So11111111111111111111111111111111111111112', // Wrapped SOL for testing
+                        entry_price: 100000 // 100k MC
+                    };
+
+                    // Create trade config
+                    const tradeConfig = {
+                        mode: this.selectedStrategy,
+                        amount: tradeAmount,
+                        sellTarget: sellTarget || '4',
+                        stopLoss: stopLoss
+                    };
+
+                    console.log('🔄 Executing test trade with config:', {
+                        userId: this.currentWallet.userId,
+                        tradeConfig: tradeConfig,
+                        testSignal: testSignal
+                    });
+
+                    const response = await fetch('/api/custodial/execute-trade', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: this.currentWallet.userId,
+                            pin: pin, // Use PIN entered by user for security
+                            signal: testSignal,
+                            tradeConfig: tradeConfig
+                        })
+                    });
+
+                    const result = await response.json();
+                    console.log('📡 Test trade response:', result);
+
+                    if (result.success) {
+                        this.showNotification('✅ Test trade executed successfully!', 'success');
+                        
+                        // Refresh balance and history
+                        await this.refreshBalance();
+                        await this.refreshTradingHistory();
+
+                    } else {
+                        this.showNotification(`❌ Trade failed: ${result.error}`, 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Test trade error:', error);
+                    this.showNotification('❌ Error executing test trade', 'error');
+                } finally {
+                    const testTradeBtn = document.getElementById('test-trade-btn');
+                    testTradeBtn.disabled = false;
+                    testTradeBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Test Trade';
+                }
+            }
+
+            async executeSimpleTest() {
+                console.log('🚀 Simple test started!');
+                console.log('🚀 isAuthenticated:', this.isAuthenticated);
+                console.log('🚀 currentWallet:', this.currentWallet);
+                
+                if (!this.isAuthenticated || !this.currentWallet) {
+                    alert('❌ Wallet not authenticated!');
+                    return;
+                }
+
+                const pin = prompt('Enter PIN for simple test:');
+                console.log('🚀 PIN entered:', pin ? `${pin.length} digits` : 'none');
+                
+                if (!pin) {
+                    alert('❌ No PIN entered!');
+                    return;
+                }
+
+                try {
+                    console.log('🚀 Making API call...');
+                    
+                    const testData = {
+                        userId: this.currentWallet.userId,
+                        pin: pin,
+                        signal: {
+                            id: Date.now(),
+                            token_symbol: 'SIMPLE_TEST',
+                            token_contract: 'So11111111111111111111111111111111111111112',
+                            entry_price: 50000
+                        },
+                        tradeConfig: {
+                            mode: 'trenches',
+                            amount: 0.01,
+                            sellTarget: '2',
+                            stopLoss: 10
+                        }
+                    };
+                    
+                    console.log('🚀 Sending data:', testData);
+
+                    const response = await fetch('/api/custodial/execute-trade', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(testData)
+                    });
+
+                    console.log('🚀 Response status:', response.status);
+                    
+                    const result = await response.json();
+                    console.log('🚀 Response data:', result);
+
+                    if (result.success) {
+                        console.log('🎯 TRADE SUCCESS! Full details:');
+                        console.log('📋 Trade ID:', result.data?.tradeId);
+                        console.log('💸 Fee Transaction:', result.data?.feeSignature);
+                        console.log('🔗 Trade Transaction:', result.data?.tradeSignature);
+                        console.log('💰 Amount:', result.data?.amount);
+                        console.log('📊 Full response:', result);
+                        
+                        // Create detailed success message with Solscan links
+                        const tradeId = result.data?.tradeId || 'Unknown';
+                        const feeHash = result.data?.feeSignature || 'No hash';
+                        const tradeHash = result.data?.tradeSignature || 'No hash';
+                        
+                        // Create Solscan links for devnet
+                        const feeExplorerUrl = `https://solscan.io/tx/${feeHash}?cluster=devnet`;
+                        const tradeExplorerUrl = `https://solscan.io/tx/${tradeHash}?cluster=devnet`;
+                        
+                        console.log('🔗 Fee Transaction on Solscan:', feeExplorerUrl);
+                        console.log('🔗 Trade Transaction on Solscan:', tradeExplorerUrl);
+                        
+                        const detailMsg = `✅ TRADE SUCCESS!\n\n` +
+                                        `🆔 Trade ID: ${tradeId}\n` +
+                                        `💸 Fee TX: ${feeHash.slice(0,20)}...\n` +
+                                        `🔗 Trade TX: ${tradeHash.slice(0,20)}...\n\n` +
+                                        `Check browser console for Solscan links!`;
+                        
+                        alert(detailMsg);
+                        this.showNotification('✅ Simple test executed successfully!', 'success');
+                        
+                        // Force refresh history
+                        await this.loadTradingHistory();
+                        
+                    } else {
+                        alert(`❌ Simple test FAILED: ${result.error}`);
+                        this.showNotification(`❌ Simple test failed: ${result.error}`, 'error');
+                    }
+
+                } catch (error) {
+                    console.error('🚀 Simple test error:', error);
+                    alert(`❌ Simple test ERROR: ${error.message}`);
+                }
+            }
+
+            async refreshBalance() {
+                if (!this.isAuthenticated || !this.currentWallet) return;
+
+                try {
+                    const response = await fetch(`/api/custodial/balance/${this.currentWallet.userId}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.currentWallet.balance = result.data.balance;
+                        this.updateWalletDisplay();
+                        console.log(`💰 Balance updated: ${result.data.balance} SOL`);
+                    }
+
+                } catch (error) {
+                    console.error('❌ Error refreshing balance:', error);
+                }
+            }
+
+            async refreshTradingHistory() {
+                const refreshBtn = document.getElementById('refresh-history-btn');
+                const originalHTML = refreshBtn.innerHTML;
+                
+                try {
+                    // Show loading state
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Refreshing...';
+                    refreshBtn.disabled = true;
+                    
+                    console.log('🔄 Manually refreshing trading history...');
+                    await this.loadTradingHistory();
+                    
+                    this.showNotification('✅ Trading history refreshed!', 'success');
+                    
+                } catch (error) {
+                    console.error('❌ Error refreshing history:', error);
+                    this.showNotification('❌ Failed to refresh trading history', 'error');
+                } finally {
+                    // Reset button
+                    refreshBtn.innerHTML = originalHTML;
+                    refreshBtn.disabled = false;
+                }
+            }
+
+            async loadTradingHistory() {
+                if (!this.isAuthenticated || !this.currentWallet) return;
+
+                try {
+                    const response = await fetch(`/api/custodial/trades/${this.currentWallet.userId}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.displayTradingHistory(result.data.trades);
+                    }
+
+                } catch (error) {
+                    console.error('❌ Error loading trading history:', error);
+                }
+            }
+
+            displayTradingHistory(trades) {
+                const container = document.getElementById('trading-history-container');
+                
+                if (!trades || trades.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-400 py-12">
+                            <i class="fas fa-chart-line text-4xl text-gray-600 mb-4"></i>
+                            <p>No trades executed yet. Start trading to see your history here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const tradesHTML = trades.map(trade => `
+                    <div class="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                                    <span class="text-white font-bold text-xs">${trade.token_symbol}</span>
+                                </div>
+                                <div>
+                                    <div class="text-white font-semibold">${trade.token_symbol}</div>
+                                    <div class="text-xs text-gray-400">${trade.trade_mode.toUpperCase()} Mode</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-white">${trade.amount_sol} SOL</div>
+                                <div class="text-xs ${trade.status === 'completed' ? 'text-green-400' : trade.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}">
+                                    ${trade.status.toUpperCase()}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>Fee: ${trade.fee_amount} SOL</span>
+                            <span>${new Date(trade.created_at).toLocaleString()}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = tradesHTML;
+            }
+
+            getDevnetSol() {
+                if (!this.currentWallet) {
+                    this.showNotification('❌ Please authenticate your wallet first', 'error');
+                    return;
+                }
+
+                // Open Solana devnet faucet
+                const faucetUrl = `https://faucet.solana.com/?address=${this.currentWallet.publicKey}`;
+                window.open(faucetUrl, '_blank');
+                
+                this.showNotification('🚰 Devnet faucet opened. You can request free SOL for testing!', 'info');
+                
+                // Auto-refresh balance after 10 seconds
+                setTimeout(() => {
+                    this.refreshBalance();
+                }, 10000);
+            }
+
+            showMnemonicBackup(mnemonic, walletAddress) {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-gray-900 rounded-lg p-8 max-w-2xl mx-4 border border-gray-700">
+                        <div class="text-center mb-6">
+                            <i class="fas fa-key text-4xl text-yellow-400 mb-4"></i>
+                            <h3 class="text-2xl font-bold text-white mb-2">Wallet Created Successfully!</h3>
+                            <p class="text-gray-400">Save this information securely. You'll need it to recover your wallet.</p>
+                        </div>
+
+                        <!-- WALLET ADDRESS SECTION -->
+                        <div class="bg-blue-900 bg-opacity-20 rounded-lg p-4 mb-6 border border-blue-800">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-blue-200 text-sm font-medium mb-1">Your Wallet Address:</div>
+                                    <div class="text-white font-mono text-sm break-all">${walletAddress}</div>
+                                </div>
+                                <button onclick="navigator.clipboard.writeText('${walletAddress}'); this.innerHTML='<i class=\\'fas fa-check mr-2\\'></i>Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-copy mr-2\\'></i>Copy', 2000)" 
+                                        class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white transition-all duration-300 flex items-center ml-4">
+                                    <i class="fas fa-copy mr-2"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                            <div class="grid grid-cols-3 gap-3 text-center">
+                                ${mnemonic.split(' ').map((word, i) => `
+                                    <div class="bg-gray-700 rounded-lg p-3">
+                                        <div class="text-xs text-gray-400">${i + 1}</div>
+                                        <div class="text-white font-mono">${word}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-red-900 bg-opacity-20 rounded-lg p-4 mb-6 border border-red-800">
+                            <div class="text-red-200 text-sm">
+                                <strong>⚠️ IMPORTANT:</strong> Write down this seed phrase and store it safely. 
+                                We cannot recover your wallet if you lose both your PIN and seed phrase.
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex space-x-3">
+                                <button onclick="navigator.clipboard.writeText('${mnemonic}'); this.innerHTML='<i class=\\'fas fa-check mr-2\\'></i>Seed Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-copy mr-2\\'></i>Copy Seed Phrase', 2000)" 
+                                        class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg text-white transition-all duration-300">
+                                    <i class="fas fa-copy mr-2"></i>Copy Seed Phrase
+                                </button>
+                                <button onclick="navigator.clipboard.writeText('Wallet Address: ${walletAddress}\\n\\nSeed Phrase: ${mnemonic}'); this.innerHTML='<i class=\\'fas fa-check mr-2\\'></i>All Copied!'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-clipboard mr-2\\'></i>Copy All Info', 2000)" 
+                                        class="flex-1 bg-purple-600 hover:bg-purple-700 py-3 rounded-lg text-white transition-all duration-300">
+                                    <i class="fas fa-clipboard mr-2"></i>Copy All Info
+                                </button>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg text-white transition-all duration-300">
+                                <i class="fas fa-check mr-2"></i>I've Saved Everything Securely
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+
+            updateUI() {
+                // Initial UI state
+                this.updateStatus();
+            }
+
+            checkExistingSession() {
+                const savedSession = localStorage.getItem('alphabot_wallet_session');
+                if (savedSession) {
+                    try {
+                        const sessionData = JSON.parse(savedSession);
+                        console.log('🔄 Found existing wallet session, attempting to restore...');
+                        
+                        // Verify session is still valid (not older than 24 hours)
+                        const sessionAge = Date.now() - sessionData.timestamp;
+                        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+                        
+                        if (sessionAge > maxAge) {
+                            console.log('⏰ Session expired, clearing...');
+                            localStorage.removeItem('alphabot_wallet_session');
+                            return;
+                        }
+                        
+                        // Restore wallet session
+                        this.currentWallet = sessionData.wallet;
+                        this.isAuthenticated = true;
+                        
+                        // Update UI to authenticated state
+                        document.getElementById('wallet-setup-section').classList.add('hidden');
+                        document.getElementById('trading-dashboard').classList.remove('hidden');
+                        
+                        // Update wallet display
+                        this.updateWalletDisplay();
+                        this.updateStatus();
+                        
+                        // Enable test trade buttons
+                        const testTradeBtn = document.getElementById('test-trade-btn');
+                        if (testTradeBtn) {
+                            testTradeBtn.disabled = false;
+                        }
+                        
+                        const simpleTestBtn = document.getElementById('simple-test-btn');
+                        if (simpleTestBtn) {
+                            simpleTestBtn.disabled = false;
+                        }
+                        
+                        // Refresh balance and trading history
+                        this.refreshBalance();
+                        this.refreshTradingHistory();
+                        
+                        console.log('✅ Wallet session restored successfully');
+                        this.showNotification('🔄 Wallet session restored automatically', 'success');
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to restore session:', error);
+                        localStorage.removeItem('alphabot_wallet_session');
+                    }
+                }
+            }
+
+            saveWalletSession() {
+                if (!this.currentWallet || !this.isAuthenticated) return;
+                
+                // Create a copy without the PIN for security
+                const walletCopy = { ...this.currentWallet };
+                delete walletCopy.pin; // Remove PIN for security
+                
+                const sessionData = {
+                    wallet: walletCopy,
+                    timestamp: Date.now(),
+                    version: '2.0'
+                };
+                
+                try {
+                    localStorage.setItem('alphabot_wallet_session', JSON.stringify(sessionData));
+                    console.log('💾 Wallet session saved to localStorage (PIN excluded for security)');
+                } catch (error) {
+                    console.error('❌ Failed to save wallet session:', error);
+                }
+            }
+
+            clearWalletSession() {
+                try {
+                    localStorage.removeItem('alphabot_wallet_session');
+                    console.log('🗑️ Wallet session cleared from localStorage');
+                } catch (error) {
+                    console.error('❌ Failed to clear wallet session:', error);
+                }
+            }
+
+            async refreshTradingHistory() {
+                console.log('🔄 Refreshing trading history...');
+                
+                if (!this.currentWallet) {
+                    this.showNotification('❌ No wallet authenticated', 'error');
+                    return;
+                }
+
+                try {
+                    const historyContainer = document.getElementById('trading-history-container');
+                    if (!historyContainer) return;
+
+                    // Show loading state
+                    historyContainer.innerHTML = `
+                        <div class="text-center text-gray-400 py-12">
+                            <i class="fas fa-spinner fa-spin text-4xl text-gray-600 mb-4"></i>
+                            <p>Loading trading history...</p>
+                        </div>
+                    `;
+
+                    const response = await fetch(`/api/custodial/trades/${this.currentWallet.userId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+                    console.log('📊 Trading history response:', result);
+
+                    if (!result.success) {
+                        throw new Error(result.error || 'Failed to fetch trading history');
+                    }
+
+                    const trades = result.data.trades || [];
+                    
+                    if (trades.length === 0) {
+                        historyContainer.innerHTML = `
+                            <div class="text-center text-gray-400 py-12">
+                                <i class="fas fa-chart-line text-4xl text-gray-600 mb-4"></i>
+                                <p>No trades executed yet. Start trading to see your history here.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Generate trades HTML
+                    const tradesHTML = trades.map(trade => {
+                        const statusColors = {
+                            'completed': 'bg-green-600',
+                            'pending': 'bg-yellow-600',
+                            'failed': 'bg-red-600'
+                        };
+                        
+                        const statusColor = statusColors[trade.status] || 'bg-gray-600';
+                        const tradeDate = new Date(trade.created_at).toLocaleString();
+                        
+                        // Generate Solscan link if transaction signature exists
+                        const solscanLink = trade.transaction_signature ? 
+                            `<a href="https://solscan.io/tx/${trade.transaction_signature}?cluster=devnet" target="_blank" 
+                               class="text-blue-400 hover:text-blue-300 text-sm transition-colors duration-200">
+                                <i class="fas fa-external-link-alt mr-1"></i>View on Solscan
+                            </a>` : 
+                            '<span class="text-gray-500 text-sm">No transaction signature</span>';
+
+                        return `
+                            <div class="bg-gray-800 rounded-lg border border-gray-700 p-4 hover:border-gray-600 transition-all duration-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fas fa-exchange-alt text-orange-400"></i>
+                                        <span class="font-semibold text-white">${trade.signal_name || 'Test Trade'}</span>
+                                        <span class="${statusColor} text-white text-xs px-2 py-1 rounded-full">${trade.status.toUpperCase()}</span>
+                                    </div>
+                                    <span class="text-gray-400 text-sm">${tradeDate}</span>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                    <div>
+                                        <span class="text-gray-400 text-xs">Amount</span>
+                                        <div class="text-white font-medium">${trade.amount} SOL</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-xs">Mode</span>
+                                        <div class="text-white font-medium">${trade.mode || 'trenches'}</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-xs">Fee</span>
+                                        <div class="text-white font-medium">${trade.fee_amount || 0} SOL</div>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-xs">Wallet</span>
+                                        <div class="text-white font-medium text-xs">${trade.wallet_address ? trade.wallet_address.substring(0, 8) + '...' : 'N/A'}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    ${solscanLink}
+                                    <span class="text-gray-500 text-xs">ID: ${trade.id}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    historyContainer.innerHTML = `
+                        <div class="space-y-4">
+                            ${tradesHTML}
+                        </div>
+                        <div class="text-center mt-6">
+                            <span class="text-gray-400 text-sm">Showing ${trades.length} recent trades</span>
+                        </div>
+                    `;
+
+                    this.showNotification(`✅ Trading history updated (${trades.length} trades)`, 'success');
+
+                } catch (error) {
+                    console.error('❌ Error refreshing trading history:', error);
+                    
+                    const historyContainer = document.getElementById('trading-history-container');
+                    if (historyContainer) {
+                        historyContainer.innerHTML = `
+                            <div class="text-center text-red-400 py-12">
+                                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                                <p>Failed to load trading history</p>
+                                <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    this.showNotification('❌ Failed to refresh trading history', 'error');
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notification-container');
+                if (!container) return;
+
+                const colors = {
+                    success: 'bg-green-600 border-green-500',
+                    error: 'bg-red-600 border-red-500',
+                    info: 'bg-blue-600 border-blue-500',
+                    warning: 'bg-yellow-600 border-yellow-500'
+                };
+
+                const notification = document.createElement('div');
+                notification.className = `notification ${colors[type]} text-white px-6 py-4 rounded-xl shadow-xl border-l-4 max-w-sm`;
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="flex-1">${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 6000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.autoTradingApp = new AutoTradingApp();
+        });
+    </script>
+</body>
+</html>

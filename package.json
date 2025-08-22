@@ -18,21 +18,35 @@
     "status": "pm2 list"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "telegraf": "^4.12.2",
-    "sqlite3": "^5.1.6",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.4",
     "axios": "^1.4.0",
-    "hono": "^4.0.0"
+    "bip39": "^3.1.0",
+    "bs58": "^6.0.0",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "express": "^4.18.2",
+    "hono": "^4.0.0",
+    "sqlite3": "^5.1.6",
+    "telegraf": "^4.12.2",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250705.0",
     "@hono/vite-cloudflare-pages": "^0.4.2",
+    "typescript": "^5.0.0",
     "vite": "^5.0.0",
-    "wrangler": "^3.78.0",
-    "typescript": "^5.0.0"
+    "wrangler": "^3.78.0"
   },
-  "keywords": ["trading", "signals", "telegram", "crypto", "roi", "alphacalls", "calisthenics"],
+  "keywords": [
+    "trading",
+    "signals",
+    "telegram",
+    "crypto",
+    "roi",
+    "alphacalls",
+    "calisthenics"
+  ],
   "author": "Alex - Professional Calisthenics Athlete & Crypto Educator",
   "license": "MIT",
   "repository": {

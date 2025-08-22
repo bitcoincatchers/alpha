@@ -95,12 +95,14 @@ function detectROIUpdate(message, replyToMessage = null) {
             let multiplier, tokenSymbol;
             
             // Determine which group contains the multiplier vs token
-            if (isNaN(match[1])) {
+            if (match[1] && match[2] && isNaN(match[1])) {
                 tokenSymbol = match[1].toUpperCase();
                 multiplier = parseFloat(match[2]);
-            } else {
+            } else if (match[1] && match[2]) {
                 multiplier = parseFloat(match[1]);
                 tokenSymbol = match[2].toUpperCase();
+            } else {
+                continue; // Skip if missing groups
             }
             
             if (multiplier >= 1.1 && multiplier <= 1000) {
@@ -139,13 +141,14 @@ function detectROIUpdate(message, replyToMessage = null) {
                 const multiplier = parseFloat(numberMatch[1]);
                 if (multiplier >= 1.1 && multiplier <= 1000) {
                     const roiPercentage = Math.round((multiplier - 1) * 100);
+                    const tokenSymbol = tokenMatch[1] ? tokenMatch[1].toUpperCase() : 'UNKNOWN';
                     console.log('🎯 Contextual ROI detected:', { 
-                        tokenSymbol: tokenMatch[1].toUpperCase(), 
+                        tokenSymbol, 
                         multiplier, 
                         roiPercentage 
                     });
                     return { 
-                        tokenSymbol: tokenMatch[1].toUpperCase(), 
+                        tokenSymbol, 
                         roiPercentage, 
                         multiplier, 
                         confidence: 0.9 
@@ -164,23 +167,38 @@ function detectROIUpdate(message, replyToMessage = null) {
  */
 function detectTradingSignal(message) {
     console.log('🔍 Analyzing message for trading signals...');
+    console.log('📝 Message content:', message.substring(0, 200) + '...');
     
     const msgLower = message.toLowerCase();
     
-    // Enhanced trigger patterns
+    // ENHANCED: More comprehensive trigger patterns
     const triggerPatterns = [
         'trading alert',
-        'trade alert',
+        'trade alert', 
         'signal:',
         'call:',
         'pump alert',
         'new call',
+        'buy',
+        'entry',
+        'target',
+        'gem',
+        'moonshot',
+        'x100',
+        'x10',
+        'x5',
+        'mc',
+        'market cap',
+        'ca:',
+        'contract:',
+        'address:',
         '📈',
         '🚀',
-        '🌙'
+        '🌙',
+        '💎',
+        '🔥',
+        '⚡'
     ];
-    
-    let hasTrigger = triggerPatterns.some(trigger => msgLower.includes(trigger));
     
     // Token extraction with multiple patterns
     const tokenPatterns = [
@@ -191,21 +209,39 @@ function detectTradingSignal(message) {
     
     let tokenSymbol = null;
     for (const pattern of tokenPatterns) {
-        const match = message.match(pattern);
-        if (match) {
+        pattern.lastIndex = 0; // Reset regex state
+        const match = pattern.exec(message);
+        if (match && match[1]) {
             tokenSymbol = match[1].toUpperCase();
+            console.log(`💰 Token found: ${tokenSymbol}`);
             break;
         }
     }
     
-    // If no explicit trigger but has token and pricing info, might be a signal
-    if (!hasTrigger && tokenSymbol) {
-        const pricingKeywords = ['mc', 'market cap', 'entry', 'price', 'buy at'];
-        hasTrigger = pricingKeywords.some(keyword => msgLower.includes(keyword));
+    // Check for triggers
+    let hasTrigger = triggerPatterns.some(trigger => msgLower.includes(trigger));
+    console.log(`🎯 Has trigger: ${hasTrigger}, Token: ${tokenSymbol}`);
+    
+    // ENHANCED: If we have a token, be more liberal about considering it a signal
+    if (tokenSymbol) {
+        // If we have a token but no explicit trigger, look for ANY crypto-related content
+        if (!hasTrigger) {
+            const cryptoKeywords = ['price', 'chart', 'dex', 'pump', 'moon', 'hodl', 'buy', 'sell', 'hold'];
+            hasTrigger = cryptoKeywords.some(keyword => msgLower.includes(keyword)) || message.length > 20;
+            console.log(`🔍 Liberal trigger check: ${hasTrigger}`);
+        }
     }
     
-    if (!hasTrigger || !tokenSymbol) {
+    // FINAL CHECK: If no trigger and no token, definitely not a signal
+    if (!tokenSymbol) {
+        console.log('❌ No token found, skipping message');
         return null;
+    }
+    
+    // ENHANCED: If we have a token, we'll consider it a signal with lower threshold
+    if (!hasTrigger && tokenSymbol) {
+        console.log('⚠️ Token found but no trigger patterns, treating as potential signal anyway');
+        hasTrigger = true; // Be more aggressive
     }
     
     // Contract address extraction
@@ -216,8 +252,9 @@ function detectTradingSignal(message) {
     
     let contractAddress = null;
     for (const pattern of contractPatterns) {
-        const match = message.match(pattern);
-        if (match) {
+        pattern.lastIndex = 0; // Reset regex state
+        const match = pattern.exec(message);
+        if (match && match[1]) {
             // Validate it looks like a valid contract (32+ chars, alphanumeric)
             const addr = match[1];
             if (addr.length >= 32 && /^[A-Za-z0-9]+$/.test(addr)) {
@@ -314,10 +351,13 @@ function detectTradingSignal(message) {
 function processMessage(message, replyToMessage = null, messageId = null, chatId = null) {
     try {
         messageStats.processed++;
+        console.log(`📊 Processing message #${messageStats.processed}:`);
+        console.log(`📝 Content: "${message.substring(0, 150)}..."`);
         
         // First check for ROI updates
         const roiUpdate = detectROIUpdate(message, replyToMessage);
         if (roiUpdate) {
+            console.log(`💰 ROI Update detected: ${roiUpdate.tokenSymbol} → ${roiUpdate.roiPercentage}%`);
             updateSignalROI(roiUpdate.tokenSymbol, roiUpdate.roiPercentage, roiUpdate.confidence);
             messageStats.roiUpdates++;
             return { type: 'roi_update', data: roiUpdate };
@@ -326,11 +366,15 @@ function processMessage(message, replyToMessage = null, messageId = null, chatId
         // Then check for new trading signals
         const signal = detectTradingSignal(message);
         if (signal) {
+            console.log(`🎯 SIGNAL DETECTED: ${signal.token_symbol}`);
             if (messageId) signal.telegram_message_id = messageId;
             if (chatId) signal.telegram_chat_id = chatId;
             
             saveSignal(signal);
+            messageStats.signalsFound++;
             return { type: 'signal', data: signal };
+        } else {
+            console.log('❌ No signal detected in this message');
         }
         
         return null;

@@ -7,7 +7,133 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 const bot = require('./bot.js');
+const { getTokenInfo } = require('./dextools.js');
+const CustodialWalletManager = require('./custodial-wallet.js');
+
+// Initialize SQLite database
+const db = new sqlite3.Database('./alphabot_signals.db', (err) => {
+    if (err) {
+        console.error('❌ Error opening database:', err.message);
+    } else {
+        console.log('✅ Connected to SQLite database: alphabot_signals.db');
+    }
+});
+
+// Create wallet-related tables for fee system
+db.serialize(() => {
+    // Wallet configuration table
+    db.run(`CREATE TABLE IF NOT EXISTS wallet_config (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet_address TEXT UNIQUE NOT NULL,
+        withdrawal_fee_percent REAL DEFAULT 5.0,
+        trading_fee_percent REAL DEFAULT 5.0,
+        fee_recipient TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Fee statistics table
+    db.run(`CREATE TABLE IF NOT EXISTS fee_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet_address TEXT UNIQUE NOT NULL,
+        total_withdrawal_fees REAL DEFAULT 0.0,
+        total_trading_fees REAL DEFAULT 0.0,
+        fee_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Fee transactions table
+    db.run(`CREATE TABLE IF NOT EXISTS fee_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet_address TEXT NOT NULL,
+        fee_type TEXT NOT NULL CHECK(fee_type IN ('withdrawal', 'trading')),
+        amount REAL NOT NULL,
+        transaction_hash TEXT,
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'failed')),
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Custodial wallets table
+    db.run(`CREATE TABLE IF NOT EXISTS custodial_wallets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT UNIQUE NOT NULL,
+        telegram_username TEXT,
+        public_key TEXT UNIQUE NOT NULL,
+        encrypted_secret_key TEXT NOT NULL,
+        encrypted_mnemonic TEXT NOT NULL,
+        balance_sol REAL DEFAULT 0.0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        last_accessed TEXT DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER DEFAULT 1
+    )`);
+
+    // Custodial wallet statistics table
+    db.run(`CREATE TABLE IF NOT EXISTS custodial_wallet_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet_id INTEGER NOT NULL,
+        total_trades INTEGER DEFAULT 0,
+        successful_trades INTEGER DEFAULT 0,
+        total_volume REAL DEFAULT 0.0,
+        total_fees_paid REAL DEFAULT 0.0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (wallet_id) REFERENCES custodial_wallets(id)
+    )`);
+
+    // Automated trades table
+    db.run(`CREATE TABLE IF NOT EXISTS automated_trades (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet_id INTEGER NOT NULL,
+        signal_id INTEGER,
+        token_symbol TEXT NOT NULL,
+        token_contract TEXT NOT NULL,
+        trade_mode TEXT NOT NULL CHECK(trade_mode IN ('trenches', 'dca')),
+        amount_sol REAL NOT NULL,
+        fee_amount REAL NOT NULL,
+        entry_price REAL,
+        current_price REAL,
+        profit_loss REAL DEFAULT 0,
+        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'failed', 'partial')),
+        transaction_signature TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (wallet_id) REFERENCES custodial_wallets(id)
+    )`);
+
+    // Trenches mode specific data
+    db.run(`CREATE TABLE IF NOT EXISTS trenches_positions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trade_id INTEGER NOT NULL,
+        initial_amount REAL NOT NULL,
+        sold_amount REAL DEFAULT 0,
+        remaining_amount REAL NOT NULL,
+        sell_50_percent_at REAL NOT NULL, -- 2x target
+        custom_sell_target REAL, -- User's custom target (e.g., 4x)
+        is_50_percent_sold INTEGER DEFAULT 0,
+        is_fully_sold INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (trade_id) REFERENCES automated_trades(id)
+    )`);
+
+    // Migration: Add telegram_username column if it doesn't exist
+    db.run(`ALTER TABLE custodial_wallets ADD COLUMN telegram_username TEXT`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.log('ℹ️ Column telegram_username already exists or other error:', err.message);
+        } else if (!err) {
+            console.log('✅ Added telegram_username column to custodial_wallets table');
+        }
+    });
+
+    console.log('✅ Wallet fee system tables initialized');
+    console.log('✅ Custodial wallet system tables initialized');
+});
+
+// Initialize custodial wallet manager
+const custodialWalletManager = new CustodialWalletManager(db);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -448,9 +574,289 @@ app.post('/api/signals/test', (req, res) => {
     }
 });
 
+// Phantom wallet endpoints removed - using custodial wallet system only
+
+
+// ====== CUSTODIAL WALLET ENDPOINTS ======
+
+// Create custodial wallet
+app.post('/api/custodial/create-wallet', async (req, res) => {
+    try {
+        const { userId, pin, telegramUsername } = req.body;
+        
+        if (!userId || !pin) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId and pin are required'
+            });
+        }
+        
+        // Clean and validate telegram username
+        let cleanUsername = telegramUsername?.trim() || '';
+        if (cleanUsername && !cleanUsername.startsWith('@')) {
+            cleanUsername = '@' + cleanUsername;
+        }
+        
+        console.log(`🏦 Creating custodial wallet for user: ${userId} (${cleanUsername})`);
+        
+        const result = await custodialWalletManager.createCustodialWallet(userId, pin, cleanUsername);
+        
+        res.json({
+            success: true,
+            data: result,
+            message: 'Custodial wallet created successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error creating custodial wallet:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Authenticate custodial wallet
+app.post('/api/custodial/authenticate', async (req, res) => {
+    try {
+        const { userId, pin } = req.body;
+        
+        if (!userId || !pin) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId and pin are required'
+            });
+        }
+        
+        console.log(`🔓 Authenticating custodial wallet for user: ${userId}`);
+        
+        const result = await custodialWalletManager.authenticateWallet(userId, pin);
+        
+        // Don't send keypair to frontend, only public info
+        const safeResult = {
+            success: result.success,
+            publicKey: result.publicKey,
+            walletId: result.walletId,
+            balance: result.balance
+        };
+        
+        res.json({
+            success: true,
+            data: safeResult,
+            message: 'Wallet authenticated successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error authenticating wallet:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Execute automated trade
+app.post('/api/custodial/execute-trade', async (req, res) => {
+    try {
+        const { userId, pin, signal, tradeConfig } = req.body;
+        
+        if (!userId || !pin || !signal || !tradeConfig) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId, pin, signal, and tradeConfig are required'
+            });
+        }
+        
+        console.log(`🤖 Executing automated trade for user: ${userId}`);
+        console.log(`📊 Signal: ${signal.token_symbol} - Mode: ${tradeConfig.mode}`);
+        
+        const result = await custodialWalletManager.executeAutomatedTrade(userId, pin, signal, tradeConfig);
+        
+        res.json({
+            success: true,
+            data: result,
+            message: 'Automated trade executed successfully',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error executing automated trade:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get custodial wallet balance
+app.get('/api/custodial/balance/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const wallet = await custodialWalletManager.getUserWallet(userId);
+        if (!wallet) {
+            return res.status(404).json({
+                success: false,
+                error: 'Custodial wallet not found'
+            });
+        }
+        
+        const balance = await custodialWalletManager.getWalletBalance(wallet.public_key);
+        
+        res.json({
+            success: true,
+            data: {
+                publicKey: wallet.public_key,
+                balance: balance,
+                lastAccessed: wallet.last_accessed
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting wallet balance:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get user's trading history
+app.get('/api/custodial/trades/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const limit = parseInt(req.query.limit) || 20;
+        
+        const trades = db.prepare(`
+            SELECT at.*, cw.public_key as wallet_address
+            FROM automated_trades at
+            JOIN custodial_wallets cw ON at.wallet_id = cw.id
+            WHERE cw.user_id = ?
+            ORDER BY at.created_at DESC
+            LIMIT ?
+        `).all(userId, limit);
+        
+        res.json({
+            success: true,
+            data: {
+                trades: trades,
+                count: trades.length
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting trading history:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Get custodial wallet stats
+app.get('/api/custodial/stats/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const wallet = await custodialWalletManager.getUserWallet(userId);
+        if (!wallet) {
+            return res.status(404).json({
+                success: false,
+                error: 'Custodial wallet not found'
+            });
+        }
+        
+        const stats = db.prepare(`
+            SELECT * FROM custodial_wallet_stats WHERE wallet_id = ?
+        `).get(wallet.id);
+        
+        const recentTrades = db.prepare(`
+            SELECT * FROM automated_trades 
+            WHERE wallet_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT 10
+        `).all(wallet.id);
+        
+        res.json({
+            success: true,
+            data: {
+                stats: stats || {
+                    wallet_id: wallet.id,
+                    total_trades: 0,
+                    successful_trades: 0,
+                    total_volume: 0,
+                    total_fees_paid: 0
+                },
+                recent_trades: recentTrades,
+                wallet: {
+                    public_key: wallet.public_key,
+                    created_at: wallet.created_at,
+                    last_accessed: wallet.last_accessed
+                }
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting custodial wallet stats:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// DexTools token info endpoint  
+app.get('/api/token/:contractAddress', async (req, res) => {
+    try {
+        const { contractAddress } = req.params;
+        
+        if (!contractAddress || contractAddress.length < 32) {
+            return res.status(400).json({
+                success: false,
+                error: 'Valid contract address is required (32+ characters)'
+            });
+        }
+        
+        console.log(`🔍 Fetching DexTools data for: ${contractAddress}`);
+        const tokenInfo = await getTokenInfo(contractAddress);
+        
+        res.json({
+            success: true,
+            data: tokenInfo,
+            contract: contractAddress,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching token info:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch token info',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Default route - serve main interface
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Auto trading page
+app.get('/auto-trading', (req, res) => {
+    res.sendFile(path.join(__dirname, 'auto-trading.html'));
 });
 
 // 404 handler

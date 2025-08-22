@@ -4,6 +4,8 @@
  */
 
 const API_KEY = 'CbNmMfDzpm9Oc9nM6ZKQd3jHgm12nyGN4QXBY9y7';
+
+// Try both v2 endpoint variations that DexTools typically uses
 const BASE_URL = 'https://api.dextools.io/v2';
 
 // Rate limiting: Store last request times
@@ -41,22 +43,24 @@ async function makeApiRequest(endpoint) {
             headers: {
                 'X-API-KEY': API_KEY,
                 'accept': 'application/json',
-                'User-Agent': 'AlphaBot/1.0'
+                'User-Agent': 'AlphaBot/2.0'
             }
         });
         
         rateLimiter.lastRequest = Date.now();
         
-        if (!response.ok) {
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ DexTools response received');
+            console.log('📄 Response data:', JSON.stringify(data, null, 2));
+            return data;
+        } else {
+            const errorText = await response.text();
+            console.error(`❌ DexTools API ${response.status}:`, errorText);
             throw new Error(`DexTools API error: ${response.status} ${response.statusText}`);
         }
-        
-        const data = await response.json();
-        console.log('✅ DexTools response received');
-        return data;
-        
     } catch (error) {
-        console.error('❌ DexTools API error:', error);
+        console.error('❌ DexTools request failed:', error.message);
         throw error;
     }
 }
@@ -73,17 +77,24 @@ async function getTokenInfo(contractAddress, chain = 'ether') {
         let poolData = null;
         
         try {
-            // Method 1: Try token endpoint
+            // Method 1: Try the standard DexTools v2 token endpoint
+            console.log('🔍 Trying standard v2 token endpoint...');
             tokenData = await makeApiRequest(`/token/${chain}/${contractAddress}`);
         } catch (error) {
-            console.log('⚠️ Token endpoint failed, trying pools endpoint');
+            console.log('⚠️ Standard token endpoint failed:', error.message);
         }
         
         try {
-            // Method 2: Get pool information (this gives us liquidity, volume, price)
-            poolData = await makeApiRequest(`/token/${chain}/${contractAddress}/pools`);
+            // Method 2: Try pool/pair information 
+            console.log('🔍 Trying pool/pair endpoint...');
+            poolData = await makeApiRequest(`/pool/${chain}/${contractAddress}`);
         } catch (error) {
-            console.log('⚠️ Pools endpoint failed');
+            console.log('⚠️ Pool endpoint failed, trying pair endpoint...');
+            try {
+                poolData = await makeApiRequest(`/pair/${chain}/${contractAddress}`);
+            } catch (error2) {
+                console.log('⚠️ Pair endpoint also failed:', error2.message);
+            }
         }
         
         // If both failed, try pair endpoint with popular pairs
@@ -105,6 +116,24 @@ async function getTokenInfo(contractAddress, chain = 'ether') {
         
         // Process and combine data
         const tokenInfo = processTokenData(tokenData, poolData, null, contractAddress);
+        
+        // If DexTools fails, try DexScreener as fallback
+        if (!tokenInfo.symbol || tokenInfo.symbol === 'UNKNOWN') {
+            console.log('🔄 DexTools failed, trying DexScreener API...');
+            try {
+                const dexScreenerData = await getDexScreenerTokenInfo(contractAddress);
+                if (dexScreenerData && dexScreenerData.symbol !== 'UNKNOWN') {
+                    console.log('✅ Got data from DexScreener successfully!');
+                    return dexScreenerData;
+                }
+            } catch (error) {
+                console.log('⚠️ DexScreener also failed:', error.message);
+            }
+            
+            // If both fail, return error info
+            tokenInfo.apiStatus = 'Multiple APIs failed';
+            tokenInfo.note = 'Both DexTools and DexScreener unavailable';
+        }
         
         console.log('✅ Token info processed:', tokenInfo);
         return tokenInfo;
@@ -411,14 +440,94 @@ async function enrichSignalsWithDexTools(signals) {
     return enrichedSignals;
 }
 
+/**
+ * Get token information from DexScreener API (fallback)
+ */
+async function getDexScreenerTokenInfo(contractAddress) {
+    try {
+        console.log(`🔍 Fetching DexScreener data for: ${contractAddress}`);
+        
+        const url = `https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`DexScreener API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📄 DexScreener response received');
+        
+        if (!data.pairs || data.pairs.length === 0) {
+            throw new Error('No pairs found for this token');
+        }
+        
+        // Get the most liquid pair (first one is usually the main pair)
+        const mainPair = data.pairs[0];
+        
+        const tokenInfo = {
+            contract: contractAddress,
+            symbol: mainPair.baseToken?.symbol || 'UNKNOWN',
+            name: mainPair.baseToken?.name || 'Unknown Token',
+            currentPrice: parseFloat(mainPair.priceUsd) || 0,
+            price: parseFloat(mainPair.priceUsd) || 0,
+            mcap: mainPair.marketCap || mainPair.fdv || 0,
+            mcapFormatted: formatNumberDisplay(mainPair.marketCap || mainPair.fdv || 0),
+            volume24h: mainPair.volume?.h24 || 0,
+            volume24hFormatted: formatNumberDisplay(mainPair.volume?.h24 || 0),
+            liquidity: mainPair.liquidity?.usd || 0,
+            liquidityFormatted: formatNumberDisplay(mainPair.liquidity?.usd || 0),
+            priceChange24h: mainPair.priceChange?.h24 || 0,
+            lastUpdated: new Date().toISOString(),
+            source: 'dexscreener',
+            chain: mainPair.chainId || 'ethereum',
+            pairAddress: mainPair.pairAddress,
+            dexId: mainPair.dexId,
+            url: mainPair.url
+        };
+        
+        console.log('✅ DexScreener token info processed:', {
+            symbol: tokenInfo.symbol,
+            price: tokenInfo.price,
+            mcap: tokenInfo.mcapFormatted,
+            liquidity: tokenInfo.liquidityFormatted
+        });
+        
+        return tokenInfo;
+        
+    } catch (error) {
+        console.error(`❌ DexScreener error for ${contractAddress}:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * Format numbers for display
+ */
+function formatNumberDisplay(num) {
+    if (!num || num === 0) return '0';
+    
+    const number = parseFloat(num);
+    if (number >= 1000000000) {
+        return (number / 1000000000).toFixed(2) + 'B';
+    } else if (number >= 1000000) {
+        return (number / 1000000).toFixed(2) + 'M';
+    } else if (number >= 1000) {
+        return (number / 1000).toFixed(2) + 'K';
+    } else {
+        return number.toFixed(2);
+    }
+}
+
 module.exports = {
     getTokenInfo,
+    getDexScreenerTokenInfo,
     enrichSignalWithDexTools,
     enrichSignalsWithDexTools,
     calculateGainPotential,
     formatMcap,
     formatVolume,
-    formatLiquidity
+    formatLiquidity,
+    formatNumberDisplay
 };
 
 console.log('🎯 DexTools API module loaded with API key:', API_KEY.substring(0, 10) + '***');

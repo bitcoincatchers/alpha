@@ -8,6 +8,8 @@
     <meta name="author" content="Alex - Professional Calisthenics Athlete & Crypto Educator">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Solana Web3.js for blockchain transactions -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <style>
         :root {
             --primary-color: #007AFF;
@@ -70,6 +72,41 @@
             background: var(--primary-hover);
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        /* Wallet and Green Button Styles */
+        .btn-green {
+            background: var(--green-color);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-green:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-green:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Wallet info styling */
+        #wallet-info {
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         /* Enhanced Alert Banner */
@@ -277,6 +314,9 @@
                 <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-white transition-all duration-300">
                     <i class="fas fa-cog text-lg"></i>
                 </button>
+                <a href="/auto-trading" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-6 py-3 rounded-xl text-white font-semibold flex items-center transition-all duration-300 shadow-lg hover:shadow-orange-500/25">
+                    <i class="fas fa-robot mr-2"></i>Auto Trading
+                </a>
             </div>
         </div>
     </header>
@@ -491,6 +531,9 @@
     <div id="notification-container" class="fixed top-20 right-6 z-50 space-y-3"></div>
 
     <!-- ENHANCED JAVASCRIPT -->
+    <!-- AlphaBot Solana Client -->
+    <script src="solana-client.js"></script>
+
     <script>
         class AlphaBotApp {
             constructor() {
@@ -498,6 +541,7 @@
                 this.eventSource = null;
                 this.botConnected = false;
                 this.stats = {};
+                // System initialized without external wallet dependencies
                 this.init();
             }
 
@@ -509,6 +553,8 @@
                 this.updateStats();
                 this.testBotConnection();
                 this.startStatsUpdater();
+                // System ready for signal processing
+                this.checkExistingWalletConnection();
             }
 
             async loadSignals() {
@@ -521,7 +567,10 @@
                         this.signals = data.signals;
                         this.renderSignals();
                         this.updateStats();
-                        console.log(\`📊 Loaded \${this.signals.length} signals\`);
+                        console.log(`📊 Loaded ${this.signals.length} signals`);
+                        
+                        // Load DexTools data for signals with contract addresses
+                        this.loadDexToolsData();
                         
                         if (data.stats) {
                             this.stats = { ...this.stats, ...data.stats };
@@ -561,10 +610,17 @@
                 const statusTextEl = document.getElementById('status-text');
                 
                 if (statusDot && statusTextEl) {
-                    statusDot.className = \`status-indicator \${connected ? 'status-online' : 'status-offline'}\`;
+                    statusDot.className = `status-indicator ${connected ? 'status-online' : 'status-offline'}`;
                     statusTextEl.textContent = statusText;
                     this.botConnected = connected;
                 }
+            }
+
+            checkExistingWalletConnection() {
+                // Placeholder for wallet connection check
+                // AlphaBot v2.0 uses custodial wallet system handled in auto-trading.html
+                console.log('🔍 Checking existing wallet connections...');
+                // This function can be expanded later for wallet integrations
             }
 
             setupRealTimeUpdates() {
@@ -625,7 +681,7 @@
                 this.renderSignals();
                 this.updateStats();
                 this.showAlertBanner(signal);
-                this.showNotification(\`🆕 New signal: $\${signal.token_symbol}\`, 'success');
+                this.showNotification(`🆕 New signal: $${signal.token_symbol}`, 'success');
                 
                 // Update live stats
                 document.getElementById('signals-found').textContent = (parseInt(document.getElementById('signals-found').textContent) + 1).toString();
@@ -637,8 +693,8 @@
                     this.signals[signalIndex].roi_percentage = roiPercentage;
                     this.renderSignals();
                     this.updateStats();
-                    this.showNotification(\`💰 ROI updated: \${roiPercentage}%\`, 'success');
-                    console.log(\`💰 ROI updated for \${this.signals[signalIndex].token_symbol}: \${roiPercentage}%\`);
+                    this.showNotification(`💰 ROI updated: ${roiPercentage}%`, 'success');
+                    console.log(`💰 ROI updated for ${this.signals[signalIndex].token_symbol}: ${roiPercentage}%`);
                     
                     // Update live stats
                     document.getElementById('roi-updates').textContent = (parseInt(document.getElementById('roi-updates').textContent) + 1).toString();
@@ -654,7 +710,7 @@
                 
                 if (banner && signalInfo) {
                     const entryPrice = signal.entry_mc ? this.formatMC(signal.entry_mc) : 'Market Cap TBD';
-                    signalInfo.innerHTML = \`<strong>$\${signal.token_symbol}</strong> - Entry: \${entryPrice}\`;
+                    signalInfo.innerHTML = `<strong>$${signal.token_symbol}</strong> - Entry: ${entryPrice}`;
                     
                     banner.classList.add('show');
                     document.body.classList.add('banner-visible');
@@ -678,7 +734,7 @@
                 if (!container) return;
 
                 if (this.signals.length === 0) {
-                    container.innerHTML = \`
+                    container.innerHTML = `
                         <div class="signal-card p-12 text-center">
                             <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i class="fas fa-chart-line text-4xl text-gray-600"></i>
@@ -690,7 +746,7 @@
                                 <i class="fas fa-robot mr-2"></i>Configure Bot Now
                             </button>
                         </div>
-                    \`;
+                    `;
                     return;
                 }
 
@@ -699,50 +755,175 @@
 
             renderSignalCard(signal, index) {
                 const roiClass = signal.roi_percentage > 0 ? 'roi-positive' : 'roi-neutral';
-                const roiText = signal.roi_percentage ? \`\${signal.roi_percentage}%\` : 'Pending';
+                const roiText = signal.roi_percentage ? `${signal.roi_percentage}%` : 'Pending';
                 const timeAgo = this.formatTimeAgo(signal.created_at);
                 
                 const chartButton = signal.dexscreener_link ? 
-                    \`<button onclick="window.open('\${signal.dexscreener_link}', '_blank')" class="chart-btn px-4 py-2 rounded-lg text-sm font-semibold">
+                    `<button onclick="window.open('${signal.dexscreener_link}', '_blank')" class="chart-btn px-4 py-2 rounded-lg text-sm font-semibold">
                         <i class="fas fa-chart-bar mr-1"></i>View Chart
-                    </button>\` : '';
+                    </button>` : '';
 
                 const animationDelay = index * 0.1;
                 
-                return \`
-                    <div class="signal-card p-8 fade-in" style="animation-delay: \${animationDelay}s">
+                return `
+                    <div class="signal-card p-8 fade-in" style="animation-delay: ${animationDelay}s">
                         <div class="flex items-start justify-between mb-6">
                             <div class="flex items-start space-x-6">
                                 <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <span class="text-white font-bold text-lg">\${signal.token_symbol.substring(0, 3)}</span>
+                                    <span class="text-white font-bold text-lg">${signal.token_symbol.substring(0, 3)}</span>
                                 </div>
                                 <div>
-                                    <h3 class="text-2xl font-bold text-white mb-2">$\${signal.token_symbol}</h3>
-                                    <p class="text-gray-400 mb-3">\${timeAgo}</p>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="text-sm bg-gray-800 text-gray-300 px-4 py-2 rounded-full font-medium">
-                                            \${signal.entry_mc ? this.formatMC(signal.entry_mc) : 'Market Cap TBD'}
-                                        </span>
-                                        \${chartButton}
+                                    <h3 class="text-2xl font-bold text-white mb-2">$${signal.token_symbol}</h3>
+                                    <p class="text-gray-400 mb-3">${timeAgo}</p>
+                                    <div class="flex items-center space-x-3 mb-4" id="chart-button-container-${signal.id}">
+                                        <button class="chart-btn px-4 py-2 rounded-lg text-sm font-semibold opacity-50 cursor-not-allowed">
+                                            <i class="fas fa-chart-bar mr-1"></i>Loading Chart...
+                                        </button>
+                                    </div>
+                                    <!-- MCAP, LIQ, ROI BOXES -->
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div class="stats-card text-center">
+                                            <div class="text-sm font-bold text-blue-400">MCAP</div>
+                                            <div class="text-lg font-bold text-white" id="mcap-${signal.id}">
+                                                ${signal.mcap || 'Loading...'}
+                                            </div>
+                                        </div>
+                                        <div class="stats-card text-center">
+                                            <div class="text-sm font-bold text-green-400">LIQ</div>
+                                            <div class="text-lg font-bold text-white" id="liq-${signal.id}">
+                                                ${signal.liquidity || 'Loading...'}
+                                            </div>
+                                        </div>
+                                        <div class="stats-card text-center">
+                                            <div class="text-sm font-bold text-purple-400">PRICE</div>
+                                            <div class="text-lg font-bold text-white" id="price-${signal.id}">
+                                                ${signal.price || 'Loading...'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="\${roiClass} px-6 py-3 rounded-xl text-center min-w-[120px]">
-                                    <div class="text-lg font-bold">\${roiText}</div>
+                                <div class="${roiClass} px-6 py-3 rounded-xl text-center min-w-[120px]">
+                                    <div class="text-lg font-bold">${roiText}</div>
                                     <div class="text-xs opacity-75 font-medium">ROI</div>
                                 </div>
                             </div>
                         </div>
                         
-                        \${signal.token_contract ? \`
+                        ${signal.token_contract ? `
                             <div class="mt-6 p-4 bg-gray-900 rounded-xl">
                                 <p class="text-xs text-gray-400 mb-2 font-medium">Contract Address</p>
-                                <p class="text-sm text-gray-300 font-mono break-all">\${signal.token_contract}</p>
+                                <p class="text-sm text-gray-300 font-mono break-all">${signal.token_contract}</p>
                             </div>
-                        \` : ''}
+                        ` : ''}
                     </div>
-                \`;
+                `;
+            }
+
+            async loadDexToolsData() {
+                console.log('🔍 Loading DexTools data for signals...');
+                
+                for (const signal of this.signals) {
+                    if (signal.token_contract && signal.token_contract.length >= 32) {
+                        try {
+                            console.log(`📊 Fetching DexTools data for ${signal.token_symbol} (${signal.token_contract})`);
+                            
+                            const response = await fetch(`/api/token/${signal.token_contract}`);
+                            const data = await response.json();
+                            
+                            if (data.success && data.data) {
+                                const tokenInfo = data.data;
+                                console.log('✅ DexTools data received:', tokenInfo);
+                                
+                                // Update the UI elements
+                                this.updateTokenDataUI(signal.id, tokenInfo);
+                            } else {
+                                console.log(`⚠️ No DexTools data for ${signal.token_symbol}`);
+                            }
+                        } catch (error) {
+                            console.error(`❌ Error fetching DexTools data for ${signal.token_symbol}:`, error);
+                        }
+                        
+                        // Rate limiting - wait 2 seconds between requests
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+            }
+
+            updateTokenDataUI(signalId, tokenInfo) {
+                console.log(`🎯 Updating UI for signal ${signalId} with data:`, tokenInfo);
+                
+                // Check if we have API issues
+                const hasApiIssue = tokenInfo.apiStatus || tokenInfo.note;
+                const displayText = hasApiIssue ? 'Check API' : 'No Data';
+                
+                // Update MCAP - ALWAYS update, even if 0
+                const mcapElement = document.getElementById(`mcap-${signalId}`);
+                if (mcapElement) {
+                    const mcapValue = tokenInfo.mcap || tokenInfo.mcapFormatted || 0;
+                    mcapElement.textContent = mcapValue > 0 ? this.formatMC(mcapValue) : displayText;
+                    console.log(`📊 MCAP updated: ${mcapElement.textContent}`);
+                }
+                
+                // Update Liquidity - ALWAYS update, even if 0
+                const liqElement = document.getElementById(`liq-${signalId}`);
+                if (liqElement) {
+                    const liqValue = tokenInfo.liquidity || tokenInfo.liquidityFormatted || 0;
+                    liqElement.textContent = liqValue > 0 ? this.formatMC(liqValue) : displayText;
+                    console.log(`💧 LIQ updated: ${liqElement.textContent}`);
+                }
+                
+                // Update Price - ALWAYS update, even if 0
+                const priceElement = document.getElementById(`price-${signalId}`);
+                if (priceElement) {
+                    const priceValue = tokenInfo.currentPrice || tokenInfo.price || 0;
+                    priceElement.textContent = priceValue > 0 ? `$${this.formatPrice(priceValue)}` : displayText;
+                    console.log(`💰 PRICE updated: ${priceElement.textContent}`);
+                }
+                
+                // Update Chart Button - ALWAYS update if we have URL data
+                const chartContainer = document.getElementById(`chart-button-container-${signalId}`);
+                if (chartContainer) {
+                    if (tokenInfo.url && tokenInfo.url !== '') {
+                        chartContainer.innerHTML = `
+                            <button onclick="window.open('${tokenInfo.url}', '_blank')" 
+                                    class="chart-btn px-4 py-2 rounded-lg text-sm font-semibold hover:scale-105 transition-transform">
+                                <i class="fas fa-chart-bar mr-1"></i>View Chart
+                            </button>
+                        `;
+                        console.log(`📈 CHART button updated with URL: ${tokenInfo.url}`);
+                    } else {
+                        chartContainer.innerHTML = `
+                            <button class="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-semibold cursor-not-allowed">
+                                <i class="fas fa-chart-bar mr-1"></i>No Chart
+                            </button>
+                        `;
+                        console.log(`📈 CHART button updated: No URL available`);
+                    }
+                }
+                
+                // Log API status if there are issues
+                if (hasApiIssue) {
+                    console.log(`⚠️ API Issue: ${tokenInfo.apiStatus || tokenInfo.note}`);
+                }
+                
+                console.log(`✅ Updated UI for signal ${signalId}`);
+            }
+
+            formatPrice(price) {
+                if (!price || price === 0) return '0.00';
+                
+                const num = parseFloat(price);
+                if (num < 0.000001) {
+                    return num.toExponential(2);
+                } else if (num < 0.01) {
+                    return num.toFixed(6);
+                } else if (num < 1) {
+                    return num.toFixed(4);
+                } else {
+                    return num.toFixed(2);
+                }
             }
 
             updateStats() {
@@ -754,7 +935,7 @@
 
                 document.getElementById('total-signals').textContent = totalSignals;
                 document.getElementById('active-signals').textContent = activeSignals;
-                document.getElementById('avg-roi').textContent = \`\${avgROI}%\`;
+                document.getElementById('avg-roi').textContent = `${avgROI}%`;
                 document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
             }
 
@@ -780,35 +961,82 @@
             }
 
             setupEventListeners() {
+                console.log('🎛️ Setting up event listeners...');
+                
                 const refreshBtn = document.getElementById('refresh-btn');
-                refreshBtn?.addEventListener('click', () => this.loadSignals());
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', () => this.loadSignals());
+                    console.log('✅ Refresh button listener added');
+                }
 
                 const connectBotBtn = document.getElementById('connect-bot-btn');
-                connectBotBtn?.addEventListener('click', () => this.toggleConfigPanel());
+                if (connectBotBtn) {
+                    connectBotBtn.addEventListener('click', () => {
+                        console.log('🤖 Connect Bot button clicked!');
+                        this.toggleConfigPanel();
+                    });
+                    console.log('✅ Connect Bot button listener added');
+                } else {
+                    console.error('❌ Connect Bot button not found!');
+                }
 
                 const connectKolBtn = document.getElementById('connect-kol-btn');
-                connectKolBtn?.addEventListener('click', () => this.toggleConfigPanel());
+                if (connectKolBtn) {
+                    connectKolBtn.addEventListener('click', () => {
+                        console.log('👔 Connect KOL button clicked!');
+                        this.toggleConfigPanel();
+                    });
+                    console.log('✅ Connect KOL button listener added');
+                }
 
                 const settingsBtn = document.getElementById('settings-btn');
-                settingsBtn?.addEventListener('click', () => this.toggleConfigPanel());
+                if (settingsBtn) {
+                    settingsBtn.addEventListener('click', () => {
+                        console.log('⚙️ Settings button clicked!');
+                        this.toggleConfigPanel();
+                    });
+                    console.log('✅ Settings button listener added');
+                }
 
                 const connectTelegramBtn = document.getElementById('connect-telegram-btn');
-                connectTelegramBtn?.addEventListener('click', () => this.connectTelegramBot());
+                if (connectTelegramBtn) {
+                    connectTelegramBtn.addEventListener('click', () => this.connectTelegramBot());
+                    console.log('✅ Connect Telegram button listener added');
+                }
 
                 const connectKolTelegramBtn = document.getElementById('connect-kol-telegram-btn');
-                connectKolTelegramBtn?.addEventListener('click', () => this.addKolChannel());
+                if (connectKolTelegramBtn) {
+                    connectKolTelegramBtn.addEventListener('click', () => this.addKolChannel());
+                    console.log('✅ Connect KOL Telegram button listener added');
+                }
 
                 const testConnectionBtn = document.getElementById('test-connection-btn');
-                testConnectionBtn?.addEventListener('click', () => this.testAllConnections());
+                if (testConnectionBtn) {
+                    testConnectionBtn.addEventListener('click', () => this.testAllConnections());
+                    console.log('✅ Test Connection button listener added');
+                }
+
+                // Auto Trading system handles all wallet functionality
+                
+                console.log('🎛️ All event listeners setup completed');
             }
 
             toggleConfigPanel() {
+                console.log('🔧 Toggling config panel...');
                 const panel = document.getElementById('config-panel');
                 if (panel) {
+                    const wasHidden = panel.classList.contains('hidden');
                     panel.classList.toggle('hidden');
-                    if (!panel.classList.contains('hidden')) {
+                    const isNowHidden = panel.classList.contains('hidden');
+                    
+                    console.log(`📋 Panel was hidden: ${wasHidden}, now hidden: ${isNowHidden}`);
+                    
+                    if (!isNowHidden) {
+                        console.log('🔍 Panel opened, testing connection...');
                         this.testBotConnection();
                     }
+                } else {
+                    console.error('❌ Config panel element not found!');
                 }
             }
 
@@ -842,7 +1070,7 @@
                     } else {
                         statusDisplay.textContent = 'Connection Failed';
                         statusDisplay.className = 'text-red-400 font-semibold';
-                        this.showNotification(\`❌ Connection failed: \${result.error}\`, 'error');
+                        this.showNotification(`❌ Connection failed: ${result.error}`, 'error');
                     }
                     
                 } catch (error) {
@@ -882,7 +1110,7 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        this.showNotification(\`✅ KOL channel added: \${channelInput.value}\`, 'success');
+                        this.showNotification(`✅ KOL channel added: ${channelInput.value}`, 'success');
                         channelInput.value = '';
                         nameInput.value = '';
                         
@@ -891,7 +1119,7 @@
                             countEl.textContent = result.channelCount || '1';
                         }
                     } else {
-                        this.showNotification(\`❌ Failed to add channel: \${result.error}\`, 'error');
+                        this.showNotification(`❌ Failed to add channel: ${result.error}`, 'error');
                     }
                     
                 } catch (error) {
@@ -937,6 +1165,8 @@
                 }
             }
 
+            // Phantom wallet functionality removed - now using custodial wallet system
+
             showLoading(show) {
                 const spinner = document.getElementById('loading-spinner');
                 if (spinner) {
@@ -955,15 +1185,15 @@
                 };
 
                 const notification = document.createElement('div');
-                notification.className = \`notification \${colors[type]} text-white px-6 py-4 rounded-xl shadow-xl border-l-4 max-w-sm\`;
-                notification.innerHTML = \`
+                notification.className = `notification ${colors[type]} text-white px-6 py-4 rounded-xl shadow-xl border-l-4 max-w-sm`;
+                notification.innerHTML = `
                     <div class="flex items-center">
-                        <span class="flex-1">\${message}</span>
+                        <span class="flex-1">${message}</span>
                         <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                \`;
+                `;
 
                 container.appendChild(notification);
 
@@ -980,17 +1210,19 @@
                 const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
                 if (diffInMinutes < 1) return 'Just now';
-                if (diffInMinutes < 60) return \`\${diffInMinutes}m ago\`;
-                if (diffInMinutes < 1440) return \`\${Math.floor(diffInMinutes / 60)}h ago\`;
-                return \`\${Math.floor(diffInMinutes / 1440)}d ago\`;
+                if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+                if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+                return `${Math.floor(diffInMinutes / 1440)}d ago`;
             }
 
             formatMC(mc) {
-                if (mc >= 1000000000) return \`\${(mc / 1000000000).toFixed(1)}B MC\`;
-                if (mc >= 1000000) return \`\${(mc / 1000000).toFixed(1)}M MC\`;
-                if (mc >= 1000) return \`\${(mc / 1000).toFixed(0)}K MC\`;
-                return \`\${mc} MC\`;
+                if (mc >= 1000000000) return `${(mc / 1000000000).toFixed(1)}B MC`;
+                if (mc >= 1000000) return `${(mc / 1000000).toFixed(1)}M MC`;
+                if (mc >= 1000) return `${(mc / 1000).toFixed(0)}K MC`;
+                return `${mc} MC`;
             }
+
+            // Fee system methods removed - now handled by custodial wallet system
         }
 
         // Global functions
