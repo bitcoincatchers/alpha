@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaBot Signals Dashboard - Coming Soon</title>
+    <meta name="description" content="Advanced signals dashboard coming soon - Professional trading interface">
+    <meta name="author" content="Alex - Professional Calisthenics Athlete & Crypto Educator">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-dark: #000000;
+            --bg-card: #111111;
+            --text-primary: #ffffff;
+            --border-color: #333333;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- HEADER -->
+    <header class="bg-black border-b border-gray-800 px-6 py-4 sticky top-0 z-50 backdrop-blur-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-line text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">Signals Dashboard</h1>
+                    <p class="text-sm text-gray-400">Coming Soon</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white transition-all duration-300 flex items-center">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <a href="/auto-trading" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 rounded-lg text-white font-semibold flex items-center transition-all duration-300">
+                    <i class="fas fa-robot mr-2"></i>Auto Trading
+                </a>
+                <a href="/my-account" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 px-4 py-2 rounded-lg text-white font-semibold flex items-center transition-all duration-300">
+                    <i class="fas fa-user-cog mr-2"></i>My Account
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <!-- SIGNALS DASHBOARD PLACEHOLDER -->
+        <div class="text-center py-20">
+            <div class="mb-8">
+                <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                    <i class="fas fa-chart-line text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-bold text-white mb-4">Signals Dashboard</h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                    Advanced portfolio tracking and signal analytics coming soon. 
+                    This premium feature will provide deep insights into your trading performance.
+                </p>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-700 rounded-xl p-8 max-w-lg mx-auto mb-8">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center justify-center">
+                    <i class="fas fa-star text-yellow-500 mr-3"></i>
+                    Premium Features Coming Soon
+                </h3>
+                <ul class="text-left text-gray-300 space-y-3">
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-3"></i>
+                        Real-time Portfolio Tracking
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-3"></i>
+                        Advanced PNL Analytics
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-3"></i>
+                        Position Management Tools
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-3"></i>
+                        Performance Insights
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-check text-green-500 mr-3"></i>
+                        Risk Management Dashboard
+                    </li>
+                </ul>
+            </div>
+
+            <div class="flex justify-center space-x-4">
+                <a href="/" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center transition-all duration-300 shadow-lg hover:shadow-blue-500/25">
+                    <i class="fas fa-home mr-3"></i>Back to Dashboard
+                </a>
+                <a href="/auto-trading" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center transition-all duration-300 shadow-lg hover:shadow-orange-500/25">
+                    <i class="fas fa-robot mr-3"></i>Auto Trading
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple wallet sync functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📊 Signals Dashboard (Placeholder) loaded');
+            
+            // Wallet sync check (same as other pages)
+            let walletData = null;
+            const mainWalletData = localStorage.getItem('alphabot_wallet');
+            const sessionWalletData = localStorage.getItem('alphabot_wallet_session');
+            
+            if (mainWalletData) {
+                walletData = mainWalletData;
+            } else if (sessionWalletData) {
+                walletData = sessionWalletData;
+            }
+            
+            if (walletData) {
+                console.log('💳 Wallet connection detected in Signals Dashboard');
+            }
+        });
+    </script>
+</body>
+</html>

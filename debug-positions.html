@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Active Positions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl font-bold mb-4">🔍 Debug Active Positions</h1>
+    
+    <div class="mb-4">
+        <button id="test-btn" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded">
+            Test Load Positions
+        </button>
+    </div>
+    
+    <div id="results" class="bg-gray-800 p-4 rounded mb-4">
+        <p>Click button to test...</p>
+    </div>
+    
+    <div id="positions-display" class="bg-gray-800 p-4 rounded">
+        <h3 class="font-bold mb-2">Positions Display:</h3>
+        <div id="positions-list">No positions loaded yet...</div>
+    </div>
+
+    <script>
+        document.getElementById('test-btn').addEventListener('click', async function() {
+            const resultsDiv = document.getElementById('results');
+            const positionsDiv = document.getElementById('positions-list');
+            
+            try {
+                resultsDiv.innerHTML = '<p>🔄 Loading positions...</p>';
+                
+                // Test API call
+                const response = await fetch('/api/positions/live/toto');
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <h3 class="font-bold">API Response:</h3>
+                    <p>Success: ${data.success}</p>
+                    <p>Count: ${data.count}</p>
+                    <p>Positions Length: ${data.positions ? data.positions.length : 'null'}</p>
+                `;
+                
+                // Display positions
+                if (data.positions && data.positions.length > 0) {
+                    let positionsHTML = '';
+                    data.positions.forEach((pos, index) => {
+                        positionsHTML += `
+                            <div class="border border-gray-600 p-3 mb-2 rounded">
+                                <h4 class="font-bold">${index + 1}. ${pos.symbol}</h4>
+                                <p>Type: ${pos.type}</p>
+                                <p>Status: ${pos.status}</p>
+                                <p>Balance USD: ${pos.balanceUsd}</p>
+                                <p>ROI: ${pos.roi}</p>
+                                <p>Contract: ${pos.contractAddress}</p>
+                                <p>Should Show: ${(pos.status === 'filled' || pos.type === 'Active Position' || pos.status === 'active' || pos.type === 'Real Holdings') ? 'YES ✅' : 'NO ❌'}</p>
+                            </div>
+                        `;
+                    });
+                    positionsDiv.innerHTML = positionsHTML;
+                } else {
+                    positionsDiv.innerHTML = '<p class="text-red-400">No positions found in response!</p>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

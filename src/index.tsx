@@ -515,6 +515,75 @@ body {
                 </div>
             </header>
 
+            <!-- Wallet Balance & Position Section -->
+            <div class="premium-card" id="wallet-overview-section" style="margin-bottom: 2rem;">
+                <div class="premium-card-header">
+                    <div class="premium-card-title">
+                        <span>💰</span>
+                        <span>Wallet Overview</span>
+                    </div>
+                    <div class="premium-card-actions">
+                        <button onclick="refreshWalletData()" class="premium-button premium-button-secondary">
+                            ↻ Refresh Balance
+                        </button>
+                        <a href="/auto-trading" class="premium-button premium-button-primary">
+                            🤖 Auto Trading
+                        </a>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <!-- SOL Balance Card -->
+                    <div class="premium-signal-card" style="background: linear-gradient(135deg, #1a1a1a, #2d2d2d);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <h3 style="color: #ffffff; font-size: 1.1rem; font-weight: 600;">SOL Balance</h3>
+                            <span style="color: #007AFF; font-size: 1.5rem;">◎</span>
+                        </div>
+                        <div id="sol-balance-display" style="font-size: 2rem; font-weight: bold; color: #00ff88; margin-bottom: 0.5rem;">
+                            -- SOL
+                        </div>
+                        <div id="sol-balance-usd" style="color: #888888; font-size: 0.9rem;">
+                            ~$-- USD
+                        </div>
+                    </div>
+
+                    <!-- Active Position Card -->
+                    <div class="premium-signal-card" style="background: linear-gradient(135deg, #1a1a1a, #2d2d2d);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <h3 style="color: #ffffff; font-size: 1.1rem; font-weight: 600;">Active Position</h3>
+                            <span id="position-status-icon" style="font-size: 1.5rem;">📊</span>
+                        </div>
+                        <div id="active-position-display">
+                            <div id="no-position" style="color: #888888; text-align: center; padding: 1rem;">
+                                No active positions
+                            </div>
+                            <div id="position-details" style="display: none;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="color: #cccccc;">Token:</span>
+                                    <span id="position-token" style="color: #ffffff; font-weight: 600;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="color: #cccccc;">Entry Price:</span>
+                                    <span id="position-entry" style="color: #ffffff;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="color: #cccccc;">Current Price:</span>
+                                    <span id="position-current" style="color: #ffffff;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="color: #cccccc;">PNL:</span>
+                                    <span id="position-pnl" style="font-weight: bold;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #cccccc;">Amount:</span>
+                                    <span id="position-amount" style="color: #ffffff;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Live Signals Section -->
             <main class="premium-card" id="live-signals-section">
                 <div class="premium-card-header">
@@ -1237,6 +1306,132 @@ body {
                     feedDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ff4444;">Failed to load signals</div>';
                 }
             }
+            
+            // Wallet data refresh function
+            async function refreshWalletData() {
+                console.log('🔄 Refreshing wallet data...');
+                
+                const balanceDisplay = document.getElementById('sol-balance-display');
+                const balanceUsdDisplay = document.getElementById('sol-balance-usd');
+                const positionDetails = document.getElementById('position-details');
+                const noPosition = document.getElementById('no-position');
+                const positionIcon = document.getElementById('position-status-icon');
+                
+                try {
+                    // Update display to show loading
+                    balanceDisplay.textContent = '⏳ Loading...';
+                    balanceUsdDisplay.textContent = 'Fetching balance...';
+                    
+                    // Fetch wallet stats (if user has custodial wallet)
+                    const walletResponse = await fetch('/api/custodial/balance/1'); // User ID 1 for demo
+                    
+                    if (walletResponse.ok) {
+                        const walletData = await walletResponse.json();
+                        
+                        // Update SOL balance
+                        if (walletData.success && walletData.balance !== undefined) {
+                            const solBalance = parseFloat(walletData.balance);
+                            balanceDisplay.textContent = \`\${solBalance.toFixed(4)} SOL\`;
+                            
+                            // Rough SOL to USD conversion (you could fetch real price)
+                            const solPrice = 200; // Approximate SOL price
+                            const usdValue = solBalance * solPrice;
+                            balanceUsdDisplay.textContent = \`~$\${usdValue.toFixed(2)} USD\`;
+                        } else {
+                            balanceDisplay.textContent = '-- SOL';
+                            balanceUsdDisplay.textContent = 'No wallet connected';
+                        }
+                    } else {
+                        balanceDisplay.textContent = '-- SOL';
+                        balanceUsdDisplay.textContent = 'Connect wallet first';
+                    }
+                    
+                    // Fetch trading history to find active positions
+                    const historyResponse = await fetch('/api/trades/history/1/10'); // Last 10 trades
+                    
+                    if (historyResponse.ok) {
+                        const historyData = await historyResponse.json();
+                        
+                        if (historyData.success && historyData.trades && historyData.trades.length > 0) {
+                            // Find the most recent BUY trade without a corresponding SELL
+                            const trades = historyData.trades;
+                            let activePosition = null;
+                            
+                            for (let trade of trades) {
+                                if (trade.trade_type === 'BUY') {
+                                    // Check if there's a corresponding SELL after this BUY
+                                    const hasSubsequentSell = trades.some(t => 
+                                        t.token_symbol === trade.token_symbol && 
+                                        t.trade_type === 'SELL' && 
+                                        new Date(t.created_at) > new Date(trade.created_at)
+                                    );
+                                    
+                                    if (!hasSubsequentSell) {
+                                        activePosition = trade;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (activePosition) {
+                                // Show position details
+                                noPosition.style.display = 'none';
+                                positionDetails.style.display = 'block';
+                                positionIcon.textContent = '📈';
+                                
+                                document.getElementById('position-token').textContent = activePosition.token_symbol;
+                                document.getElementById('position-entry').textContent = \`$\${parseFloat(activePosition.price_usd).toFixed(6)}\`;
+                                document.getElementById('position-current').textContent = 'Fetching...';
+                                document.getElementById('position-amount').textContent = \`\${parseFloat(activePosition.amount_sol).toFixed(4)} SOL\`;
+                                
+                                // Try to get current price from DexScreener or similar
+                                try {
+                                    const tokenInfo = await fetch(\`/api/token-info/\${activePosition.token_contract}\`);
+                                    if (tokenInfo.ok) {
+                                        const tokenData = await tokenInfo.json();
+                                        if (tokenData.success && tokenData.data) {
+                                            const currentPrice = tokenData.data.price_usd;
+                                            const entryPrice = parseFloat(activePosition.price_usd);
+                                            const pnlPercent = ((currentPrice - entryPrice) / entryPrice) * 100;
+                                            
+                                            document.getElementById('position-current').textContent = \`$\${currentPrice.toFixed(6)}\`;
+                                            
+                                            const pnlElement = document.getElementById('position-pnl');
+                                            pnlElement.textContent = \`\${pnlPercent > 0 ? '+' : ''}\${pnlPercent.toFixed(2)}%\`;
+                                            pnlElement.style.color = pnlPercent > 0 ? '#00ff88' : '#ff0066';
+                                        } else {
+                                            document.getElementById('position-current').textContent = 'N/A';
+                                            document.getElementById('position-pnl').textContent = 'N/A';
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Error fetching current price:', error);
+                                    document.getElementById('position-current').textContent = 'Error';
+                                    document.getElementById('position-pnl').textContent = 'N/A';
+                                }
+                            } else {
+                                // No active position
+                                noPosition.style.display = 'block';
+                                positionDetails.style.display = 'none';
+                                positionIcon.textContent = '📊';
+                            }
+                        } else {
+                            // No trades found
+                            noPosition.style.display = 'block';
+                            positionDetails.style.display = 'none';
+                            positionIcon.textContent = '📊';
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error refreshing wallet data:', error);
+                    balanceDisplay.textContent = 'Error';
+                    balanceUsdDisplay.textContent = 'Failed to load';
+                }
+            }
+            
+            // Make function globally available
+            window.refreshWalletData = refreshWalletData;
             
             // Replace the original refresh function
             window.refreshSignals = refreshSignalsEnhanced;

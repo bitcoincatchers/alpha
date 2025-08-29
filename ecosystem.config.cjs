@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'alphabot-server',
-      script: 'server.js',
+      script: 'main_server.js',
       env: {
         NODE_ENV: 'production',
         PORT: 3000

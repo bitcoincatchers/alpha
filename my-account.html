@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaBot v2.0 - My Account</title>
+    <meta name="description" content="Manage your AlphaBot account - View user ID, change password, and account settings">
+    <meta name="author" content="Alex - Professional Calisthenics Athlete & Crypto Educator">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --primary-hover: #0066cc;
+            --bg-dark: #000000;
+            --bg-card: #111111;
+            --bg-card-hover: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #666666;
+            --border-color: #333333;
+            --border-hover: #444444;
+            --success-color: #00ff88;
+            --success-bg: rgba(0, 255, 136, 0.1);
+            --success-border: rgba(0, 255, 136, 0.2);
+            --danger-color: #ff0066;
+            --warning-color: #ffaa00;
+            --purple-color: #8b5cf6;
+            --green-color: #10b981;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .account-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .account-card:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-card-hover);
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.15);
+        }
+
+        .success-message {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-color);
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 102, 0.1);
+            border: 1px solid rgba(255, 0, 102, 0.2);
+            color: var(--danger-color);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- HEADER -->
+    <header class="border-b border-gray-800 mb-8">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
+                        <i class="fas fa-user-cog text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            My Account
+                        </h1>
+                        <p class="text-gray-400 text-lg">Manage your AlphaBot account settings</p>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex items-center gap-4">
+                    <a href="/" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-xl text-white font-semibold flex items-center transition-all duration-300 shadow-lg hover:shadow-blue-500/25">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </a>
+                    <a href="/auto-trading" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 px-6 py-3 rounded-xl text-white font-semibold flex items-center transition-all duration-300 shadow-lg hover:shadow-orange-500/25">
+                        <i class="fas fa-robot mr-2"></i>Auto Trading
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="container mx-auto px-4 pb-8">
+        <!-- Account Information Card -->
+        <div class="account-card p-8 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white flex items-center">
+                    <i class="fas fa-id-card text-blue-500 mr-3"></i>
+                    Account Information
+                </h2>
+                <div id="account-status" class="text-sm font-medium text-red-400">Not Connected</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User ID -->
+                <div class="space-y-3">
+                    <label class="block text-gray-300 font-medium">User ID</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" id="user-id-display" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white w-full font-mono text-sm" readonly>
+                        <button id="copy-user-id-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-500 text-sm">Your unique user identifier for AlphaBot</p>
+                </div>
+
+                <!-- Wallet Address -->
+                <div class="space-y-3">
+                    <label class="block text-gray-300 font-medium">Wallet Address</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" id="wallet-address-display" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white w-full font-mono text-sm" readonly>
+                        <button id="copy-wallet-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-500 text-sm">Your Solana wallet public key</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="account-card p-8">
+            <h2 class="text-2xl font-bold text-white flex items-center mb-6">
+                <i class="fas fa-key text-purple-500 mr-3"></i>
+                Change Password
+            </h2>
+
+            <form id="change-password-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Current Password -->
+                    <div class="space-y-3">
+                        <label for="current-password" class="block text-gray-300 font-medium">Current Password</label>
+                        <div class="relative">
+                            <input type="password" id="current-password" name="current-password" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white w-full pr-12" placeholder="Enter current password" required>
+                            <button type="button" id="toggle-current-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- New Password -->
+                    <div class="space-y-3">
+                        <label for="new-password" class="block text-gray-300 font-medium">New Password</label>
+                        <div class="relative">
+                            <input type="password" id="new-password" name="new-password" class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white w-full pr-12" placeholder="Enter new password" required>
+                            <button type="button" id="toggle-new-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="text-green-400 text-sm">
+                            <p><i class="fas fa-info-circle mr-2"></i>Use any password you prefer (simple passwords allowed for testing)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-6">
+                    <button type="button" id="reset-form-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300">
+                        <i class="fas fa-undo mr-2"></i>Reset Form
+                    </button>
+                    <button type="submit" id="change-password-btn" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-purple-500/25">
+                        <i class="fas fa-save mr-2"></i>Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Admin Controls Card -->
+        <div class="account-card p-8 mt-8">
+            <h2 class="text-2xl font-bold text-white flex items-center mb-6">
+                <i class="fas fa-tools text-orange-500 mr-3"></i>
+                Admin Controls
+            </h2>
+            <p class="text-gray-400 mb-6">Manage your trading system and data</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- RUN BOT Control -->
+                <div class="bg-gray-800 border border-gray-600 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-play-circle text-green-500 mr-2"></i>
+                        Bot Control
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Activate bot to start processing new signals for automated trading</p>
+                    <button id="run-bot-account-btn" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg">
+                        <i class="fas fa-play mr-2"></i>RUN BOT
+                    </button>
+                </div>
+
+                <!-- Clear All Signals Control -->
+                <div class="bg-gray-800 border border-gray-600 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+                        Clear Data
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Remove all signals, orders, and trading history from the system</p>
+                    <button id="clear-signals-account-btn" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg">
+                        <i class="fas fa-trash mr-2"></i>Clear All Signals
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messages-container" class="mt-6"></div>
+    </div>
+
+    <script>
+        class MyAccountApp {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                console.log('🚀 My Account page initializing...');
+                this.setupWalletSync(); // 🔄 Setup wallet synchronization
+                await this.loadAccountInfo();
+                this.setupEventListeners();
+                this.setupPasswordToggles();
+            }
+            
+            setupWalletSync() {
+                console.log('🔄 MY-ACCOUNT: Setting up wallet synchronization...');
+                
+                // Listen for wallet updates from other pages
+                window.addEventListener('storage', (event) => {
+                    if (event.key && event.key.startsWith('alphabot_wallet') && event.newValue) {
+                        console.log('🔄 MY-ACCOUNT: Wallet updated from other page, refreshing display...');
+                        setTimeout(() => this.loadAccountInfo(), 100); // Small delay to ensure data is written
+                    }
+                });
+                
+                // Listen for custom wallet update events
+                window.addEventListener('alphabot-wallet-updated', (event) => {
+                    console.log('🔄 MY-ACCOUNT: Real-time wallet update received:', event.detail);
+                    setTimeout(() => this.loadAccountInfo(), 100);
+                });
+                
+                console.log('✅ MY-ACCOUNT: Wallet synchronization setup completed');
+            }
+
+            async loadAccountInfo() {
+                try {
+                    console.log('🔍 MY-ACCOUNT: Loading account info from unified storage...');
+                    
+                    // 🎯 UNIFIED STORAGE: Check all possible wallet storage locations with priority
+                    const walletSources = [
+                        { key: 'alphabot_wallet', name: 'Main Dashboard', priority: 1 },
+                        { key: 'alphabot_wallet_session', name: 'Auto Trading', priority: 2 },
+                        { key: 'alphabot_wallet_data', name: 'Legacy Storage', priority: 3 }
+                    ];
+                    
+                    let bestWallet = null;
+                    let bestSource = null;
+                    let highestPriority = 999;
+                    
+                    for (const source of walletSources) {
+                        try {
+                            const data = localStorage.getItem(source.key);
+                            if (data) {
+                                const parsed = JSON.parse(data);
+                                const wallet = parsed.wallet || parsed;
+                                
+                                if (wallet && (wallet.userId || wallet.publicKey)) {
+                                    if (source.priority < highestPriority) {
+                                        bestWallet = wallet;
+                                        bestSource = source;
+                                        highestPriority = source.priority;
+                                    }
+                                    console.log(`✅ Found valid wallet in ${source.name} (priority ${source.priority})`);
+                                }
+                            }
+                        } catch (error) {
+                            console.log(`⚠️ Error reading ${source.name}:`, error.message);
+                        }
+                    }
+
+                    if (bestWallet && bestSource) {
+                        console.log(`🎯 MY-ACCOUNT: Using wallet from ${bestSource.name}:`, {
+                            userId: bestWallet.userId,
+                            balance: bestWallet.balance,
+                            publicKey: bestWallet.publicKey?.slice(0, 8) + '...'
+                        });
+                        
+                        // Update UI with wallet data
+                        document.getElementById('user-id-display').value = bestWallet.userId || 'N/A';
+                        document.getElementById('wallet-address-display').value = bestWallet.publicKey || 'N/A';
+                        document.getElementById('account-status').textContent = `Connected (${bestWallet.balance || 0} SOL)`;
+                        document.getElementById('account-status').className = 'text-sm font-medium text-green-400';
+                        
+                    } else {
+                        console.log('ℹ️ MY-ACCOUNT: No wallet connection found in any storage location');
+                        document.getElementById('user-id-display').value = 'Not connected';
+                        document.getElementById('wallet-address-display').value = 'Not connected';
+                        document.getElementById('account-status').textContent = 'Not Connected';
+                        document.getElementById('account-status').className = 'text-sm font-medium text-red-400';
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading account info:', error);
+                    this.showMessage('Error loading account information', 'error');
+                }
+            }
+
+            setupEventListeners() {
+                // Copy buttons
+                document.getElementById('copy-user-id-btn').addEventListener('click', () => {
+                    this.copyToClipboard('user-id-display', 'User ID');
+                });
+
+                document.getElementById('copy-wallet-btn').addEventListener('click', () => {
+                    this.copyToClipboard('wallet-address-display', 'Wallet Address');
+                });
+
+                // Form submission
+                document.getElementById('change-password-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.changePassword();
+                });
+
+                // Reset form
+                document.getElementById('reset-form-btn').addEventListener('click', () => {
+                    document.getElementById('change-password-form').reset();
+                    this.clearMessages();
+                });
+
+                // RUN BOT button
+                const runBotAccountBtn = document.getElementById('run-bot-account-btn');
+                if (runBotAccountBtn) {
+                    runBotAccountBtn.addEventListener('click', () => {
+                        console.log('🚀 RUN BOT button clicked in My Account!');
+                        this.runBot();
+                    });
+                }
+
+                // Clear All Signals button
+                const clearSignalsAccountBtn = document.getElementById('clear-signals-account-btn');
+                if (clearSignalsAccountBtn) {
+                    clearSignalsAccountBtn.addEventListener('click', () => {
+                        console.log('🧹 Clear All Signals button clicked in My Account!');
+                        this.showClearSignalsModal();
+                    });
+                }
+            }
+
+            setupPasswordToggles() {
+                // Toggle current password visibility
+                document.getElementById('toggle-current-password').addEventListener('click', () => {
+                    this.togglePasswordVisibility('current-password', 'toggle-current-password');
+                });
+
+                // Toggle new password visibility
+                document.getElementById('toggle-new-password').addEventListener('click', () => {
+                    this.togglePasswordVisibility('new-password', 'toggle-new-password');
+                });
+            }
+
+            togglePasswordVisibility(inputId, buttonId) {
+                const input = document.getElementById(inputId);
+                const button = document.getElementById(buttonId);
+                const icon = button.querySelector('i');
+
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'fas fa-eye-slash';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'fas fa-eye';
+                }
+            }
+
+            async copyToClipboard(elementId, label) {
+                try {
+                    const element = document.getElementById(elementId);
+                    const text = element.value;
+                    
+                    if (text && text !== 'Not connected' && text !== 'N/A') {
+                        await navigator.clipboard.writeText(text);
+                        this.showMessage(`${label} copied to clipboard!`, 'success');
+                    } else {
+                        this.showMessage('Nothing to copy', 'error');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to copy to clipboard:', error);
+                    this.showMessage('Failed to copy to clipboard', 'error');
+                }
+            }
+
+            async changePassword() {
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+
+                // Validate inputs
+                if (!currentPassword || !newPassword) {
+                    this.showMessage('Please fill in all password fields', 'error');
+                    return;
+                }
+
+                // Validate new password strength (TEMPORARILY DISABLED)
+                /*
+                if (!this.validatePasswordStrength(newPassword)) {
+                    this.showMessage('New password does not meet requirements', 'error');
+                    return;
+                }
+                */
+
+                try {
+                    // Get wallet data for userId
+                    let walletData = localStorage.getItem('alphabot_wallet');
+                    if (!walletData) {
+                        walletData = localStorage.getItem('alphabot_wallet_session');
+                    }
+
+                    if (!walletData) {
+                        this.showMessage('No account found. Please connect your wallet first.', 'error');
+                        return;
+                    }
+
+                    const parsedData = JSON.parse(walletData);
+                    const wallet = parsedData.wallet || parsedData;
+
+                    // Call API to change password
+                    const response = await fetch('/api/custodial/change-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: wallet.userId,
+                            currentPassword: currentPassword,
+                            newPassword: newPassword
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.showMessage('Password updated successfully!', 'success');
+                        document.getElementById('change-password-form').reset();
+                        
+                        // Update localStorage if PIN was changed
+                        if (wallet.pin === currentPassword) {
+                            wallet.pin = newPassword;
+                            if (parsedData.wallet) {
+                                parsedData.wallet = wallet;
+                                localStorage.setItem('alphabot_wallet_session', JSON.stringify(parsedData));
+                            } else {
+                                localStorage.setItem('alphabot_wallet', JSON.stringify(wallet));
+                            }
+                            console.log('💾 Updated PIN in localStorage');
+                        }
+                        
+                    } else {
+                        this.showMessage(result.error || 'Failed to update password', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Error changing password:', error);
+                    this.showMessage('Error updating password. Please try again.', 'error');
+                }
+            }
+
+            validatePasswordStrength(password) {
+                // At least 8 characters, uppercase, lowercase, number, special char
+                const minLength = password.length >= 8;
+                const hasUpper = /[A-Z]/.test(password);
+                const hasLower = /[a-z]/.test(password);
+                const hasNumber = /\d/.test(password);
+                const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+                return minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+            }
+
+            // 🚀 RUN BOT - Activate bot for new signals only
+            async runBot() {
+                try {
+                    console.log('🚀 Activating RUN BOT from My Account...');
+                    
+                    const response = await fetch('/api/admin/run-bot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        console.log('✅ Bot activated successfully');
+                        this.showMessage('🚀 Bot Activated! Only NEW signals will trigger automated trades from now on.', 'success');
+                        
+                        // Update button state to show it's active
+                        const runBotBtn = document.getElementById('run-bot-account-btn');
+                        if (runBotBtn) {
+                            runBotBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Bot Active';
+                            runBotBtn.classList.remove('from-green-500', 'to-green-600', 'hover:from-green-600', 'hover:to-green-700');
+                            runBotBtn.classList.add('from-blue-500', 'to-blue-600', 'hover:from-blue-600', 'hover:to-blue-700');
+                            runBotBtn.disabled = true;
+                            runBotBtn.style.cursor = 'not-allowed';
+                        }
+                        
+                    } else {
+                        console.error('❌ Failed to activate bot:', result.error);
+                        this.showMessage(`❌ Failed to activate bot: ${result.error}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error activating bot:', error);
+                    this.showMessage('❌ Error activating bot', 'error');
+                }
+            }
+
+            // 🧹 Show Clear All Signals confirmation modal
+            showClearSignalsModal() {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-gray-900 border border-gray-700 rounded-xl p-8 max-w-md mx-4 shadow-2xl">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">Clear All Signals</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                This action will permanently delete:
+                                <br>• All trading signals
+                                <br>• All limit orders  
+                                <br>• All trading history
+                                <br><br>
+                                <strong class="text-red-400">This cannot be undone!</strong>
+                            </p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-lg font-medium transition-all duration-300">
+                                Cancel
+                            </button>
+                            <button onclick="window.myAccountApp.clearAllSignals(); this.closest('.fixed').remove()" 
+                                    class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg">
+                                <i class="fas fa-trash mr-2"></i>Clear All
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // 🧹 Clear All Signals - Execute the clearing
+            async clearAllSignals() {
+                try {
+                    console.log('🧹 Clearing all signals and orders from My Account...');
+                    this.showMessage('🧹 Clearing all signals and orders...', 'info');
+                    
+                    const response = await fetch('/api/admin/clear-all-signals', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        console.log('✅ All signals and orders cleared successfully');
+                        this.showMessage('✅ All signals, orders, and trading history cleared!', 'success');
+                        
+                        // Reset bot state
+                        const runBotBtn = document.getElementById('run-bot-account-btn');
+                        if (runBotBtn) {
+                            runBotBtn.innerHTML = '<i class="fas fa-play mr-2"></i>RUN BOT';
+                            runBotBtn.classList.remove('from-blue-500', 'to-blue-600', 'hover:from-blue-600', 'hover:to-blue-700');
+                            runBotBtn.classList.add('from-green-500', 'to-green-600', 'hover:from-green-600', 'hover:to-green-700');
+                            runBotBtn.disabled = false;
+                            runBotBtn.style.cursor = 'pointer';
+                        }
+                        
+                    } else {
+                        console.error('❌ Failed to clear signals:', result.error);
+                        this.showMessage(`❌ Failed to clear signals: ${result.error}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error clearing signals:', error);
+                    this.showMessage('❌ Error clearing signals', 'error');
+                }
+            }
+
+            showMessage(message, type = 'info') {
+                const container = document.getElementById('messages-container');
+                const messageDiv = document.createElement('div');
+                
+                const bgClass = type === 'success' ? 'success-message' : type === 'error' ? 'error-message' : 'bg-blue-900 border-blue-600 text-blue-300';
+                
+                messageDiv.className = `${bgClass} p-4 rounded-lg font-medium flex items-center justify-between`;
+                messageDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-3"></i>
+                        ${message}
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="ml-4 hover:opacity-75">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                container.appendChild(messageDiv);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 5000);
+            }
+
+            clearMessages() {
+                document.getElementById('messages-container').innerHTML = '';
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.myAccountApp = new MyAccountApp();
+        });
+    </script>
+</body>
+</html>

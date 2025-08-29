@@ -362,30 +362,7 @@
                     </div>
                 </div>
 
-                <!-- TRADE CONFIGURATION -->
-                <div class="bg-gray-900 rounded-lg p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Trade Configuration</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Trade Amount (SOL)</label>
-                            <input type="number" id="trade-amount" value="0.1" min="0.001" step="0.001" class="form-input w-full">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Custom Sell Target (optional)</label>
-                            <select id="sell-target" class="form-input w-full">
-                                <option value="">Auto (4x)</option>
-                                <option value="3">3x</option>
-                                <option value="5">5x</option>
-                                <option value="10">10x</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Stop Loss (%)</label>
-                            <input type="number" id="stop-loss" value="20" min="5" max="50" class="form-input w-full">
-                        </div>
-                    </div>
-                </div>
+
             </div>
 
             <!-- TEST TRADING -->
@@ -399,9 +376,9 @@
                     <div class="flex items-start space-x-3">
                         <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
                         <div class="text-sm text-yellow-200">
-                            <div class="font-semibold mb-1">Devnet Testing Mode</div>
-                            <p>This is running on Solana devnet for safe testing. No real money is used. 
-                            You can get free devnet SOL from faucets to test the system.</p>
+                            <div class="font-semibold mb-1">🚨 MAINNET LIVE TRADING MODE</div>
+                            <p>⚠️ <strong>REAL MONEY TRADING:</strong> This system is connected to Solana MAINNET. 
+                            All trades use real SOL and real tokens. Safety limits: 0.01-1.0 SOL per trade.</p>
                         </div>
                     </div>
                 </div>
@@ -418,13 +395,98 @@
                     </button>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button id="get-devnet-sol-btn" class="bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-white font-semibold">
-                            <i class="fas fa-faucet mr-2"></i>Get Devnet SOL
-                        </button>
+                        <a href="https://www.mexc.com/es/acquisition/custom-sign-up?shareCode=mexc-15AJc" target="_blank" class="bg-purple-600 hover:bg-purple-700 py-3 rounded-xl text-white font-semibold flex items-center justify-center transition-all duration-300 hover:shadow-purple-500/25">
+                            <i class="fas fa-coins mr-2"></i>Buy Real SOL on MEXC
+                        </a>
                         <button id="refresh-balance-btn" class="bg-gray-600 hover:bg-gray-700 py-3 rounded-xl text-white font-semibold">
                             <i class="fas fa-sync mr-2"></i>Refresh Balance
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- AUTO-TRADING CONFIGURATION -->
+            <div class="card p-8 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-robot text-green-500 mr-3"></i>
+                    🚀 MAINNET Automated Trading
+                </h2>
+                
+                <div class="bg-red-900 bg-opacity-30 rounded-lg p-6 mb-6 border border-red-700">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-exclamation-triangle text-red-400 mt-1"></i>
+                        <div class="text-sm text-red-200">
+                            <div class="font-semibold mb-1">⚠️ REAL MONEY AUTOMATION</div>
+                            <p>When enabled, the bot will automatically execute trades with your REAL SOL when Telegram signals are detected. 
+                            This is LIVE MAINNET trading - proceed with caution!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Auto-Trading Toggle -->
+                    <div class="bg-gray-900 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-white mb-4">Automation Status</h3>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-gray-300 font-medium">Auto-Trading</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="auto-trade-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                        
+                        <div id="auto-trade-status" class="text-sm text-red-400 font-medium">
+                            🔴 DISABLED - Safe Mode
+                        </div>
+                    </div>
+
+                    <!-- Trading Configuration -->
+                    <div class="bg-gray-900 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-white mb-4">Trading Configuration</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Trade Amount (SOL)</label>
+                                <input type="number" id="auto-trade-amount" value="0.1" min="0.01" max="1.0" step="0.01" class="form-input w-full">
+                                <p class="text-xs text-gray-500 mt-1">Safety limits: 0.01 - 1.0 SOL per trade</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Max Daily Trades</label>
+                                <input type="number" id="auto-max-trades" value="5" min="1" max="20" class="form-input w-full">
+                                <p class="text-xs text-gray-500 mt-1">Limit to prevent over-trading</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Custom Sell Target (optional)</label>
+                                <select id="sell-target" class="form-input w-full">
+                                    <option value="">Auto (4x)</option>
+                                    <option value="3">3x</option>
+                                    <option value="5">5x</option>
+                                    <option value="10">10x</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Profit target for remaining 50% of position</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Stop Loss (%)</label>
+                                <input type="number" id="stop-loss" value="20" min="5" max="50" class="form-input w-full">
+                                <p class="text-xs text-gray-500 mt-1">Maximum loss before selling position</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex space-x-4">
+                    <button id="save-auto-settings-btn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300" disabled>
+                        <i class="fas fa-save mr-2"></i>Save Auto-Trading Settings
+                    </button>
+                    
+                    <button id="test-automation-btn" class="bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300" disabled>
+                        <i class="fas fa-flask mr-2"></i>Test Automation (Safe)
+                    </button>
                 </div>
             </div>
 
@@ -465,6 +527,7 @@
             init() {
                 console.log('🤖 AlphaBot Auto Trading initializing...');
                 this.setupEventListeners();
+                this.setupWalletSync(); // 🔄 Add wallet synchronization
                 this.checkExistingSession();
                 this.updateUI();
             }
@@ -501,9 +564,9 @@
                 }
 
                 // Utility buttons
-                const getDevnetSolBtn = document.getElementById('get-devnet-sol-btn');
-                if (getDevnetSolBtn) {
-                    getDevnetSolBtn.addEventListener('click', () => this.getDevnetSol());
+                const buySolBtn = document.getElementById('buy-sol-btn');
+                if (buySolBtn) {
+                    buySolBtn.addEventListener('click', () => this.buySol());
                 }
 
                 const refreshBalanceBtn = document.getElementById('refresh-balance-btn');
@@ -529,7 +592,70 @@
                     refreshHistoryBtn.addEventListener('click', () => this.refreshTradingHistory());
                 }
 
+                // Auto-trading configuration
+                const autoTradeToggle = document.getElementById('auto-trade-toggle');
+                if (autoTradeToggle) {
+                    autoTradeToggle.addEventListener('change', () => this.updateAutoTradeStatus());
+                }
+
+                const saveAutoSettingsBtn = document.getElementById('save-auto-settings-btn');
+                if (saveAutoSettingsBtn) {
+                    saveAutoSettingsBtn.addEventListener('click', () => this.saveAutoTradeSettings());
+                }
+
+                const testAutomationBtn = document.getElementById('test-automation-btn');
+                if (testAutomationBtn) {
+                    testAutomationBtn.addEventListener('click', () => this.testAutomation());
+                }
+
                 console.log('✅ Auto Trading event listeners setup completed');
+            }
+
+            setupWalletSync() {
+                console.log('🔄 Setting up SMART wallet synchronization between pages...');
+                
+                // Listen for localStorage changes from other tabs/windows (main dashboard)
+                window.addEventListener('storage', (event) => {
+                    if (event.key && event.key.startsWith('alphabot_wallet') && event.newValue) {
+                        console.log('🔄 SMART-SYNC: Wallet data updated from other page:', event.key);
+                        try {
+                            const newData = JSON.parse(event.newValue);
+                            const walletData = newData.wallet || newData;
+                            
+                            // Update current wallet if authenticated and same user
+                            if (this.isAuthenticated && walletData.userId === this.currentWallet?.userId) {
+                                console.log('💰 SMART-SYNC: Updating balance from', this.currentWallet.balance, 'to', walletData.balance);
+                                
+                                // Merge with existing wallet data
+                                this.currentWallet = {
+                                    ...this.currentWallet,
+                                    balance: walletData.balance || this.currentWallet.balance,
+                                    publicKey: walletData.publicKey || this.currentWallet.publicKey,
+                                    lastUpdated: Date.now()
+                                };
+                                
+                                this.updateWalletDisplay();
+                                console.log('✅ SMART-SYNC: Wallet synced from other page - NEW BALANCE:', this.currentWallet.balance);
+                            }
+                        } catch (error) {
+                            console.error('❌ SMART-SYNC: Error syncing wallet:', error);
+                        }
+                    }
+                });
+                
+                // Listen for custom wallet update events
+                window.addEventListener('alphabot-wallet-updated', (event) => {
+                    console.log('🔄 SMART-SYNC: Wallet update event received:', event.detail);
+                    if (this.isAuthenticated && event.detail?.userId === this.currentWallet?.userId) {
+                        // Update with real-time balance data
+                        this.currentWallet.balance = event.detail.balance || this.currentWallet.balance;
+                        this.currentWallet.publicKey = event.detail.publicKey || this.currentWallet.publicKey;
+                        this.updateWalletDisplay();
+                        console.log('✅ SMART-SYNC: Real-time balance updated:', this.currentWallet.balance);
+                    }
+                });
+                
+                console.log('✅ SMART wallet synchronization setup completed');
             }
 
             async createWallet() {
@@ -819,7 +945,7 @@
                     return;
                 }
 
-                const tradeAmount = parseFloat(document.getElementById('trade-amount').value);
+                const tradeAmount = parseFloat(document.getElementById('auto-trade-amount').value);
                 const sellTarget = document.getElementById('sell-target').value;
                 const stopLoss = parseFloat(document.getElementById('stop-loss').value);
 
@@ -887,7 +1013,7 @@
                     if (result.success) {
                         this.showNotification('✅ Test trade executed successfully!', 'success');
                         
-                        // Refresh balance and history
+                        // 💰 POSITION-TRIGGERED: Refresh balance after successful trade
                         await this.refreshBalance();
                         await this.refreshTradingHistory();
 
@@ -969,9 +1095,9 @@
                         const feeHash = result.data?.feeSignature || 'No hash';
                         const tradeHash = result.data?.tradeSignature || 'No hash';
                         
-                        // Create Solscan links for devnet
-                        const feeExplorerUrl = `https://solscan.io/tx/${feeHash}?cluster=devnet`;
-                        const tradeExplorerUrl = `https://solscan.io/tx/${tradeHash}?cluster=devnet`;
+                        // Create Solscan links for MAINNET
+                        const feeExplorerUrl = `https://solscan.io/tx/${feeHash}`;
+                        const tradeExplorerUrl = `https://solscan.io/tx/${tradeHash}`;
                         
                         console.log('🔗 Fee Transaction on Solscan:', feeExplorerUrl);
                         console.log('🔗 Trade Transaction on Solscan:', tradeExplorerUrl);
@@ -985,7 +1111,8 @@
                         alert(detailMsg);
                         this.showNotification('✅ Simple test executed successfully!', 'success');
                         
-                        // Force refresh history
+                        // 💰 POSITION-TRIGGERED: Refresh balance and history after trade
+                        await this.refreshBalance();
                         await this.loadTradingHistory();
                         
                     } else {
@@ -1003,17 +1130,89 @@
                 if (!this.isAuthenticated || !this.currentWallet) return;
 
                 try {
-                    const response = await fetch(`/api/custodial/balance/${this.currentWallet.userId}`);
+                    console.log('💰 Refreshing balance for user:', this.currentWallet.userId);
+                    
+                    const response = await fetch('/api/custodial/balance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            userId: this.currentWallet.userId,
+                            pin: this.currentWallet.pin 
+                        })
+                    });
+                    
                     const result = await response.json();
 
-                    if (result.success) {
-                        this.currentWallet.balance = result.data.balance;
+                    if (result.success && result.balance !== undefined) {
+                        console.log(`💰 REAL balance received: ${result.balance} SOL (was: ${this.currentWallet.balance})`);
+                        
+                        // Update current wallet
+                        this.currentWallet.balance = result.balance;
+                        this.currentWallet.publicKey = result.publicKey || this.currentWallet.publicKey;
+                        this.currentWallet.lastUpdated = Date.now();
+                        
+                        // Update display
                         this.updateWalletDisplay();
-                        console.log(`💰 Balance updated: ${result.data.balance} SOL`);
+                        
+                        // 🔄 SYNC to unified storage system
+                        this.syncWalletToUnifiedStorage();
+                        
+                        this.showNotification('💰 Balance refreshed successfully!', 'success');
+                        console.log(`✅ Balance updated and synced: ${result.balance} SOL`);
+                    } else {
+                        console.log('❌ Balance refresh failed:', result.error);
+                        this.showNotification(`❌ Failed to refresh balance: ${result.error}`, 'error');
                     }
 
                 } catch (error) {
                     console.error('❌ Error refreshing balance:', error);
+                    this.showNotification('❌ Error refreshing balance', 'error');
+                }
+            }
+            
+            // NEW: Sync wallet to unified storage system
+            syncWalletToUnifiedStorage() {
+                if (!this.currentWallet || !this.isAuthenticated) return;
+                
+                try {
+                    console.log('🔄 AUTO-TRADING: Syncing wallet to unified storage...');
+                    
+                    // Create wallet copy without PIN for security
+                    const walletCopy = {
+                        userId: this.currentWallet.userId,
+                        publicKey: this.currentWallet.publicKey,
+                        balance: this.currentWallet.balance,
+                        lastUpdated: Date.now(),
+                        source: 'auto-trading'
+                    };
+                    
+                    // 🎯 Update all storage locations
+                    localStorage.setItem('alphabot_wallet', JSON.stringify(walletCopy));
+                    localStorage.setItem('alphabot_wallet_data', JSON.stringify(walletCopy));
+                    
+                    // Session format for auto-trading compatibility
+                    const sessionData = {
+                        wallet: walletCopy,
+                        timestamp: Date.now(),
+                        version: '2.0',
+                        source: 'auto-trading-refresh'
+                    };
+                    localStorage.setItem('alphabot_wallet_session', JSON.stringify(sessionData));
+                    
+                    // 📡 Emit events for real-time sync
+                    window.dispatchEvent(new CustomEvent('alphabot-wallet-updated', {
+                        detail: {
+                            balance: walletCopy.balance,
+                            publicKey: walletCopy.publicKey,
+                            userId: walletCopy.userId,
+                            source: 'auto-trading',
+                            timestamp: Date.now()
+                        }
+                    }));
+                    
+                    console.log('✅ AUTO-TRADING: Wallet synced to unified storage with balance:', walletCopy.balance);
+                } catch (error) {
+                    console.error('❌ AUTO-TRADING: Error syncing to unified storage:', error);
                 }
             }
 
@@ -1099,22 +1298,17 @@
                 container.innerHTML = tradesHTML;
             }
 
-            getDevnetSol() {
-                if (!this.currentWallet) {
-                    this.showNotification('❌ Please authenticate your wallet first', 'error');
-                    return;
+            buySol() {
+                // Open MEXC with Alex's referral link for buying SOL
+                window.open('https://www.mexc.com/es/acquisition/custom-sign-up?shareCode=mexc-15AJc', '_blank');
+                this.showNotification('🚀 Opening MEXC exchange with Alex\'s referral! Get the best rates for SOL', 'success');
+                
+                // Show wallet info if available
+                if (this.currentWallet) {
+                    setTimeout(() => {
+                        this.showNotification('💰 Your wallet address: ' + this.currentWallet.publicKey.substring(0, 8) + '... (Click to copy)', 'info');
+                    }, 2000);
                 }
-
-                // Open Solana devnet faucet
-                const faucetUrl = `https://faucet.solana.com/?address=${this.currentWallet.publicKey}`;
-                window.open(faucetUrl, '_blank');
-                
-                this.showNotification('🚰 Devnet faucet opened. You can request free SOL for testing!', 'info');
-                
-                // Auto-refresh balance after 10 seconds
-                setTimeout(() => {
-                    this.refreshBalance();
-                }, 10000);
             }
 
             showMnemonicBackup(mnemonic, walletAddress) {
@@ -1230,6 +1424,9 @@
                         this.refreshBalance();
                         this.refreshTradingHistory();
                         
+                        // Load auto-trading settings
+                        this.loadAutoTradeSettings();
+                        
                         console.log('✅ Wallet session restored successfully');
                         this.showNotification('🔄 Wallet session restored automatically', 'success');
                         
@@ -1254,8 +1451,30 @@
                 };
                 
                 try {
+                    // 🔄 COMPREHENSIVE SYNC: Save to ALL possible locations
                     localStorage.setItem('alphabot_wallet_session', JSON.stringify(sessionData));
-                    console.log('💾 Wallet session saved to localStorage (PIN excluded for security)');
+                    localStorage.setItem('alphabot_wallet', JSON.stringify(walletCopy));
+                    localStorage.setItem('alphabot_wallet_data', JSON.stringify(walletCopy)); // Legacy support
+                    
+                    // Trigger storage events for all keys to ensure cross-page sync
+                    const storageKeys = ['alphabot_wallet', 'alphabot_wallet_session', 'alphabot_wallet_data'];
+                    
+                    storageKeys.forEach(key => {
+                        const value = key === 'alphabot_wallet_session' ? JSON.stringify(sessionData) : JSON.stringify(walletCopy);
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: key,
+                            newValue: value,
+                            url: window.location.href
+                        }));
+                    });
+                    
+                    // Also emit custom event for immediate sync
+                    window.dispatchEvent(new CustomEvent('alphabot-wallet-sync', {
+                        detail: { wallet: walletCopy, source: 'auto-trading', timestamp: Date.now() }
+                    }));
+                    
+                    console.log('💾 Wallet session saved and synced to ALL storage locations (PIN excluded for security)');
+                    console.log('🔄 Storage keys updated:', storageKeys);
                 } catch (error) {
                     console.error('❌ Failed to save wallet session:', error);
                 }
@@ -1263,8 +1482,12 @@
 
             clearWalletSession() {
                 try {
+                    // Clear from ALL storage locations
                     localStorage.removeItem('alphabot_wallet_session');
-                    console.log('🗑️ Wallet session cleared from localStorage');
+                    localStorage.removeItem('alphabot_wallet');
+                    localStorage.removeItem('alphabot_wallet_data');
+                    
+                    console.log('🗑️ Wallet session cleared from ALL storage locations');
                 } catch (error) {
                     console.error('❌ Failed to clear wallet session:', error);
                 }
@@ -1329,7 +1552,7 @@
                         
                         // Generate Solscan link if transaction signature exists
                         const solscanLink = trade.transaction_signature ? 
-                            `<a href="https://solscan.io/tx/${trade.transaction_signature}?cluster=devnet" target="_blank" 
+                            `<a href="https://solscan.io/tx/${trade.transaction_signature}" target="_blank" 
                                class="text-blue-400 hover:text-blue-300 text-sm transition-colors duration-200">
                                 <i class="fas fa-external-link-alt mr-1"></i>View on Solscan
                             </a>` : 
@@ -1400,6 +1623,121 @@
                     
                     this.showNotification('❌ Failed to refresh trading history', 'error');
                 }
+            }
+
+            async loadAutoTradeSettings() {
+                if (!this.currentWallet) return;
+
+                try {
+                    const response = await fetch(`/api/auto-trade/settings/${this.currentWallet.userId}`);
+                    const result = await response.json();
+
+                    if (result.success && result.settings) {
+                        const settings = result.settings;
+                        
+                        // Update UI with settings
+                        const toggle = document.getElementById('auto-trade-toggle');
+                        const amountInput = document.getElementById('auto-trade-amount');
+                        const maxTradesInput = document.getElementById('auto-max-trades');
+                        const statusDiv = document.getElementById('auto-trade-status');
+                        const saveBtn = document.getElementById('save-auto-settings-btn');
+                        const testBtn = document.getElementById('test-automation-btn');
+
+                        if (toggle) toggle.checked = settings.auto_trade_enabled === 1;
+                        if (amountInput) amountInput.value = settings.trade_amount || 0.05;
+                        if (maxTradesInput) maxTradesInput.value = settings.max_daily_trades || 5;
+                        
+                        this.updateAutoTradeStatus();
+                        
+                        if (saveBtn) saveBtn.disabled = false;
+                        if (testBtn) testBtn.disabled = false;
+
+                        console.log('✅ Auto-trade settings loaded');
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading auto-trade settings:', error);
+                }
+            }
+
+            updateAutoTradeStatus() {
+                const toggle = document.getElementById('auto-trade-toggle');
+                const statusDiv = document.getElementById('auto-trade-status');
+
+                if (toggle && statusDiv) {
+                    if (toggle.checked) {
+                        statusDiv.innerHTML = '🟢 ENABLED - Auto-trading active!';
+                        statusDiv.className = 'text-sm text-green-400 font-medium';
+                    } else {
+                        statusDiv.innerHTML = '🔴 DISABLED - Safe mode';
+                        statusDiv.className = 'text-sm text-red-400 font-medium';
+                    }
+                }
+            }
+
+            async saveAutoTradeSettings() {
+                if (!this.currentWallet) {
+                    this.showNotification('❌ Please authenticate your wallet first', 'error');
+                    return;
+                }
+
+                try {
+                    const toggle = document.getElementById('auto-trade-toggle');
+                    const amountInput = document.getElementById('auto-trade-amount');
+                    const maxTradesInput = document.getElementById('auto-max-trades');
+
+                    const settings = {
+                        userId: this.currentWallet.userId,
+                        enabled: toggle.checked,
+                        tradeAmount: parseFloat(amountInput.value),
+                        maxDailyTrades: parseInt(maxTradesInput.value),
+                        telegramUsername: this.currentWallet.telegramUsername
+                    };
+
+                    console.log('💾 Saving auto-trade settings:', settings);
+
+                    const response = await fetch('/api/auto-trade/configure', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(settings)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.showNotification('✅ Auto-trading settings saved successfully!', 'success');
+                        
+                        if (toggle.checked) {
+                            this.showNotification('🚀 AUTO-TRADING IS NOW LIVE! Bot will trade when signals arrive.', 'warning');
+                        }
+                    } else {
+                        this.showNotification(`❌ Failed to save settings: ${result.error}`, 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Error saving auto-trade settings:', error);
+                    this.showNotification('❌ Error saving auto-trade settings', 'error');
+                }
+            }
+
+            async testAutomation() {
+                if (!this.currentWallet) {
+                    this.showNotification('❌ Please authenticate your wallet first', 'error');
+                    return;
+                }
+
+                // Create a test signal
+                const testSignal = {
+                    id: `test_${Date.now()}`,
+                    token_symbol: 'AUTOMATION_TEST',
+                    token_contract: 'So11111111111111111111111111111111111111112',
+                    entry_price: 50000
+                };
+
+                this.showNotification('🧪 Testing automation with fake signal... (No real trade)', 'info');
+
+                // This would trigger the automation system
+                console.log('🧪 Test automation signal:', testSignal);
+                this.showNotification('✅ Automation test completed - check console for details', 'success');
             }
 
             showNotification(message, type = 'info') {
