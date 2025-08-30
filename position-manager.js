@@ -39,6 +39,7 @@ class PositionManager {
         this.config = {
             // P&L calculation settings
             defaultEntryBuffer: 0.8, // Assume entry at 80% of signal MC if no data
+            minPositionValueUsd: 1.0, // Hide positions under $1 USD (Alex's request)
             profitTakingThresholds: {
                 conservative: 2.0,    // 2x market cap
                 moderate: 3.0,        // 3x market cap
@@ -88,8 +89,11 @@ class PositionManager {
             // Calculate P&L for all positions
             const positionsWithPnL = await this._calculateAllPnL(mergedPositions);
             
+            // 💎 FILTER: Hide positions under $1 USD value (as requested by Alex)
+            const filteredPositions = this._filterPositionsByMinValue(positionsWithPnL, this.config.minPositionValueUsd);
+            
             // Sort by value (highest first)
-            const sortedPositions = this._sortPositions(positionsWithPnL);
+            const sortedPositions = this._sortPositions(filteredPositions);
             
             return {
                 success: true,
@@ -146,6 +150,8 @@ class PositionManager {
      */
     async calculatePnL(position, marketData, entryData = null) {
         try {
+            console.log(`🎯 P&L START: ${position.symbol} - Source: ${position.source}, EntryValue: ${position.entryValue}`);
+            
             const cacheKey = `pnl_${position.contractAddress}_${marketData?.price || 0}_${entryData?.entryMcap || 0}`;
             
             // Check calculation cache
@@ -181,8 +187,8 @@ class PositionManager {
                     console.log(`🎯 REAL ENTRY MCAP FOUND: ${position.symbol} - $${entryMcap.toLocaleString()} (from actual purchase)`);
                 }
                 // PRIORITY 3: Use order target (limit orders)
-                else if (position.target_market_cap) {
-                    entryMcap = position.target_market_cap;
+                else if (position.target_market_cap || position.entryMcap) {
+                    entryMcap = position.target_market_cap || position.entryMcap;
                     entrySource = 'order_target';
                     console.log(`🔖 Using order target for ${position.symbol}: $${entryMcap.toLocaleString()}`);
                 }
@@ -205,8 +211,34 @@ class PositionManager {
                 const mcapChangePercent = ((currentMcap - entryMcap) / entryMcap) * 100;
                 
                 // 💰 REAL POSITION VALUE CALCULATION
-                const currentValueUsd = position.realBalance && marketData.price ? 
-                    position.realBalance * marketData.price : 0;
+                let currentValueUsd = 0;
+                
+                console.log(`🔍 VALUE CALC CHECK: ${position.symbol} - Source: ${position.source}, RealBalance: ${position.realBalance}, Price: ${marketData?.price}, EntryValue: ${position.entryValue}`);
+                
+                if (position.realBalance && marketData.price) {
+                    // Standard calculation for blockchain positions
+                    currentValueUsd = position.realBalance * marketData.price;
+                    console.log(`💰 BLOCKCHAIN VALUE: ${position.symbol} - ${position.realBalance} * ${marketData.price} = $${currentValueUsd.toFixed(2)}`);
+                } else if (position.source === 'database-order') {
+                    // Special calculation for filled orders: estimate value based on SOL spent and market cap change
+                    const solToUsdRate = 150; // Approximate SOL price (could be made dynamic)
+                    const entryValueUsd = position.entryValue * solToUsdRate;
+                    
+                    console.log(`🔍 ORDER DEBUG: ${position.symbol} - Source: ${position.source}, EntryValue: ${position.entryValue}, EntryMcap: ${position.entryMcap}, CurrentMcap: ${currentMcap}`);
+                    
+                    if (position.entryMcap && currentMcap && position.entryMcap > 0) {
+                        // Calculate value based on market cap change
+                        const mcapMultiplier = currentMcap / position.entryMcap;
+                        currentValueUsd = entryValueUsd * mcapMultiplier;
+                        console.log(`💰 ORDER VALUE: ${position.symbol} - Entry: $${entryValueUsd.toFixed(2)} (${position.entryValue} SOL) -> Current: $${currentValueUsd.toFixed(2)} (${mcapMultiplier.toFixed(2)}x)`);
+                    } else {
+                        // Fallback: use entry value if no market cap data
+                        currentValueUsd = entryValueUsd;
+                        console.log(`💰 ORDER VALUE (fallback): ${position.symbol} - $${currentValueUsd.toFixed(2)}`);
+                    }
+                } else {
+                    console.log(`🚫 NO VALUE CALC: ${position.symbol} - Source: ${position.source}, HasRealBalance: ${!!position.realBalance}, HasPrice: ${!!marketData?.price}, HasEntryValue: ${!!position.entryValue}`);
+                }
                 
                 // 🚫 NO FAKE P&L - We don't know entry price without real entry data
                 const pnlUsd = 0; // Can't calculate without real entry data
@@ -215,12 +247,22 @@ class PositionManager {
                 // Determine if profitable
                 const isProfit = mcapChangePercent > 0;
                 
+                // Calculate entry value based on position type
+                let finalEntryValueUsd = 0;
+                if (position.source === 'database-order' && position.entryValue) {
+                    finalEntryValueUsd = position.entryValue * 150; // SOL to USD approximation
+                } else {
+                    finalEntryValueUsd = currentValueUsd; // Fallback for other positions
+                }
+                
+                console.log(`💎 SAVING P&L DATA: ${position.symbol} - currentValueUsd: $${currentValueUsd.toFixed(2)}, entryValueUsd: $${finalEntryValueUsd.toFixed(2)}`);
+                
                 pnlData = {
                     // Core P&L metrics
                     pnlPercentage: mcapChangePercent,
                     pnlUsd: pnlUsd,
                     currentValueUsd: currentValueUsd,
-                    entryValueUsd: estimatedPositionSizeUsd,
+                    entryValueUsd: finalEntryValueUsd,
                     
                     // Market cap data
                     entryMarketCap: entryMcap,
@@ -250,8 +292,19 @@ class PositionManager {
                 
             } else {
                 // 💰 SMART P&L CALCULATION using 24h price change
-                const currentValueUsd = position.realBalance && marketData?.price ? 
-                    position.realBalance * marketData.price : 0;
+                let currentValueUsd = 0;
+                
+                if (position.realBalance && marketData?.price) {
+                    // Standard calculation for blockchain positions
+                    currentValueUsd = position.realBalance * marketData.price;
+                } else if (position.source === 'database-order' && position.entryValue) {
+                    // Special calculation for filled orders
+                    const solToUsdRate = 150; // Approximate SOL price
+                    currentValueUsd = position.entryValue * solToUsdRate; // Use SOL spent as base value
+                    console.log(`💰 ORDER VALUE (24h): ${position.symbol} - ${position.entryValue} SOL * ${solToUsdRate} = $${currentValueUsd.toFixed(2)}`);
+                } else {
+                    console.log(`💰 SKIPPED VALUE CALC: ${position.symbol} - Source: ${position.source}, EntryValue: ${position.entryValue}, RealBalance: ${position.realBalance}`);
+                }
                 
                 // 📈 Use 24h price change as reference for P&L calculation
                 let pnlPercentage = 0;
@@ -584,8 +637,33 @@ class PositionManager {
             
             console.log(`📊 Found ${signals.length} signals from current bot session (ID: ${currentSession.id})`);
             
+            // 🎯 ALSO GET FILLED LIMIT ORDERS (like USAI order)
+            const filledOrdersQuery = `
+                SELECT DISTINCT 
+                    lo.*,
+                    hp.id as is_hidden
+                FROM limit_orders lo
+                LEFT JOIN hidden_positions hp ON (
+                    hp.contract_address = lo.contract_address 
+                    AND (hp.user_id = ? OR hp.user_id = 'auto-session')
+                )
+                WHERE lo.user_id = ? 
+                AND lo.status = 'filled'
+                AND hp.id IS NULL
+                ORDER BY lo.filled_at DESC
+            `;
+            
+            const filledOrders = await new Promise((resolve, reject) => {
+                this.db.all(filledOrdersQuery, [userId, userId], (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows || []);
+                });
+            });
+            
+            console.log(`💰 Found ${filledOrders.length} filled orders for user ${userId}`);
+            
             // 🎯 Convert signals to position format for tracking
-            const dbPositions = signals.map(signal => ({
+            const signalPositions = signals.map(signal => ({
                 id: `signal-${signal.id}`,
                 symbol: signal.token_symbol,
                 contractAddress: signal.token_contract,
@@ -599,9 +677,35 @@ class PositionManager {
                 priority: 2
             }));
             
-            console.log(`🎯 Converted ${dbPositions.length} signals to trackable positions`);
+            // 💰 Convert filled orders to position format
+            const orderPositions = filledOrders.map(order => {
+                const position = {
+                    id: `order-${order.id}`,
+                    symbol: order.token_symbol,
+                    contractAddress: order.contract_address,
+                    type: 'Filled Order',
+                    status: 'filled',
+                    // Don't set realBalance for orders - we don't know exact token amount
+                    // realBalance: undefined, 
+                    entryMcap: order.target_market_cap || 0, // Target market cap at entry
+                    entryValue: order.amount_sol || 0, // SOL value of the order
+                    orderId: order.id,
+                    filledDate: order.filled_at,
+                    transactionSignature: order.transaction_signature,
+                    source: 'database-order',
+                    priority: 1 // Higher priority than signals
+                };
+                
+                console.log(`💰 ORDER POSITION: ${position.symbol} - Source: ${position.source}, EntryValue: ${position.entryValue} SOL, EntryMcap: ${position.entryMcap}`);
+                return position;
+            });
             
-            return dbPositions;
+            // 🔀 Combine both types of positions
+            const allDbPositions = [...orderPositions, ...signalPositions];
+            
+            console.log(`🎯 Database positions: ${allDbPositions.length} total (${filledOrders.length} filled orders + ${signals.length} signals)`);
+            
+            return allDbPositions;
             
         } catch (error) {
             console.error('❌ Error getting database positions:', error);
@@ -630,11 +734,14 @@ class PositionManager {
             for (const position of dbPositions) {
                 const key = position.contractAddress || position.symbol;
                 if (!mergedMap.has(key)) {
+                    // Preserve original source for special handling (e.g., 'database-order')
+                    const finalSource = position.source || 'database';
                     mergedMap.set(key, {
                         ...position,
-                        source: 'database',
+                        source: finalSource,
                         priority: 2
                     });
+                    console.log(`🔀 MERGED DB POSITION: ${position.symbol} - Source: ${finalSource}`);
                 }
             }
             
@@ -659,6 +766,7 @@ class PositionManager {
             const positionsWithPnL = [];
             
             for (const position of positions) {
+                console.log(`🎯 CALC P&L: ${position.symbol} - HasMarketData: ${!!position.marketData}`);
                 const pnlData = await this.calculatePnL(position, position.marketData);
                 
                 const enrichedPosition = {
@@ -677,6 +785,7 @@ class PositionManager {
                     currentMcap: position.currentMcap || 'Loading...'
                 };
                 
+                console.log(`💎 ENRICHED POSITION: ${enrichedPosition.symbol} - PnL.currentValueUsd: $${enrichedPosition.pnl?.currentValueUsd?.toFixed(2) || 'undefined'}`);
                 positionsWithPnL.push(enrichedPosition);
             }
             
@@ -699,6 +808,38 @@ class PositionManager {
             const bValue = b.pnl?.currentValueUsd || 0;
             return bValue - aValue;
         });
+    }
+
+    /**
+     * 💎 FILTER POSITIONS by minimum USD value
+     * Added per Alex's request: Hide positions under $1 USD value
+     */
+    _filterPositionsByMinValue(positions, minValueUsd = 1.0) {
+        const filteredPositions = positions.filter(position => {
+            // 🎯 ALEX'S REQUEST: Filter by USD value of position
+            // Use currentValueUsd from P&L calculation, fallback to 0 for holdings without entry data
+            let currentValueUsd = 0;
+            
+            if (position.pnl && typeof position.pnl.currentValueUsd === 'number') {
+                currentValueUsd = position.pnl.currentValueUsd;
+            } else if (position.realBalance && position.currentPrice) {
+                // Fallback calculation for holdings positions
+                currentValueUsd = position.realBalance * position.currentPrice;
+            }
+            
+            const shouldShow = currentValueUsd >= minValueUsd;
+            
+            if (!shouldShow) {
+                console.log(`🚫 HIDING position ${position.symbol}: $${currentValueUsd.toFixed(2)} (under $${minValueUsd} threshold) - Source: ${position.source || 'unknown'}`);
+            } else {
+                console.log(`✅ SHOWING position ${position.symbol}: $${currentValueUsd.toFixed(2)} - Source: ${position.source || 'unknown'}`);
+            }
+            
+            return shouldShow;
+        });
+        
+        console.log(`💎 POSITION FILTER: ${filteredPositions.length}/${positions.length} positions shown (min: $${minValueUsd})`);
+        return filteredPositions;
     }
 
     /**

@@ -16,6 +16,12 @@
 - Test accounts en producción
 - Datos simulados
 
+## 💎 NUEVAS REGLAS AGREGADAS
+- ✅ **Filtro de Valor Mínimo**: Ocultar posiciones <$1 USD automáticamente
+  - Mantiene el portfolio limpio sin "dust"
+  - Configurable en PositionManager (default: $1.00 USD)
+  - Aplicado server-side para consistencia
+
 ## ✅ PERMITIDO PARA DESARROLLO
 - Tests internos (pero NUNCA mostrar al usuario)
 - Debug tools (ocultos en producción)

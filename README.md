@@ -40,6 +40,13 @@ A comprehensive trading signals detection, automated trading execution, and port
 - ✅ **Signal Display**: Fixed JavaScript error `checkExistingWalletConnection`
 - ✅ **Database Bugs**: Fixed `recordTrade` method in custodial wallet system
 
+### 💎 **Latest Enhancement Added**
+- ✅ **Position Value Filter**: Automatically hide positions under $1 USD value
+  - Clean portfolio view by removing dust positions
+  - Configurable minimum threshold (default: $1.00 USD)
+  - Server-side filtering in PositionManager for consistency
+  - Test endpoint: `/api/positions/filter-test/toto`
+
 ## 🌐 **URLs & Access Points**
 
 - **Production**: https://3000-iobnp1jp6cxmoqpcqbu5y-6532622b.e2b.dev
@@ -60,6 +67,8 @@ A comprehensive trading signals detection, automated trading execution, and port
 | `POST /api/custodial/execute-trade` | Execute trade | ✅ Working | `userId`, `pin`, `signal`, `tradeConfig` |
 | `GET /api/custodial/trades/:userId` | Trading history | ✅ Working | `userId` |
 | `GET /api/custodial/balance/:userId` | Wallet balance | ✅ Working | `userId` |
+| `GET /api/positions/live/:userId` | Filtered positions | ✅ Working | `userId` (auto-filters <$1) |
+| `GET /api/positions/filter-test/:userId` | Filter demo | ✅ Working | `userId` (test endpoint) |
 
 ### **Telegram Integration APIs**
 | Endpoint | Function | Status |
@@ -154,7 +163,7 @@ CREATE TABLE automated_trades (
 The system is now fully functional for:
 - ✅ Signal detection and display
 - ✅ Automated trading execution  
-- ✅ Portfolio tracking and management
+- ✅ Portfolio tracking and management with **$1 minimum value filter**
 - ✅ Real-time updates and notifications
 - ✅ Secure wallet management
 

@@ -2566,12 +2566,135 @@ app.get('/api/token-info-enhanced/:contractAddress', async (req, res) => {
     }
 });
 
+// 🕵️ DEBUG ENDPOINT: Check specific position details
+app.get('/api/debug/position/:symbol', async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        console.log(`🔍 DEBUG: Analyzing position ${symbol}`);
+        
+        // Get all positions without filtering first
+        const positions = await positionManager.getActivePositions();
+        
+        // Find the specific position
+        const position = positions.data.positions.find(p => p.symbol === symbol);
+        
+        if (!position) {
+            return res.json({
+                success: false,
+                error: `Position ${symbol} not found`,
+                availableSymbols: positions.data.positions.map(p => p.symbol)
+            });
+        }
+        
+        // Debug information
+        const debugInfo = {
+            symbol: position.symbol,
+            source: position.source,
+            realBalance: position.realBalance,
+            currentPrice: position.currentPrice,
+            pnl: position.pnl,
+            calculatedValue: position.pnl?.currentValueUsd || 0,
+            wouldBeHidden: (position.pnl?.currentValueUsd || 0) < 1.0,
+            filterThreshold: 1.0
+        };
+        
+        console.log(`🔍 DEBUG ${symbol}:`, JSON.stringify(debugInfo, null, 2));
+        
+        res.json({
+            success: true,
+            debug: debugInfo,
+            message: `Debug information for ${symbol}`
+        });
+    } catch (error) {
+        console.error(`❌ Debug error for ${req.params.symbol}:`, error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
+// 💎 TEST ENDPOINT: Demonstrate $1 minimum position filter
+app.get('/api/positions/filter-test/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log(`🧪 TESTING position filter for user: ${userId}`);
+        
+        // Create mock positions with different USD values for testing
+        const mockPositions = [
+            {
+                symbol: 'HIGH_VALUE',
+                contractAddress: '0x1234567890abcdef',
+                realBalance: 1000,
+                marketData: { price: 0.05 } // $50 value
+            },
+            {
+                symbol: 'MEDIUM_VALUE', 
+                contractAddress: '0xabcdef1234567890',
+                realBalance: 100,
+                marketData: { price: 0.02 } // $2 value
+            },
+            {
+                symbol: 'LOW_VALUE',
+                contractAddress: '0x9876543210fedcba',
+                realBalance: 10,
+                marketData: { price: 0.05 } // $0.50 value - should be filtered out
+            }
+        ];
+        
+        // Calculate P&L for mock positions
+        const positionsWithPnL = [];
+        for (const position of mockPositions) {
+            const pnlData = await positionManager.calculatePnL(position, position.marketData);
+            positionsWithPnL.push({
+                ...position,
+                pnl: pnlData
+            });
+        }
+        
+        // Apply the filter (should remove LOW_VALUE position)
+        const filteredPositions = positionManager._filterPositionsByMinValue(positionsWithPnL, 1.0);
+        
+        res.json({
+            success: true,
+            test: 'position-filter-demo',
+            original: {
+                count: positionsWithPnL.length,
+                positions: positionsWithPnL.map(p => ({
+                    symbol: p.symbol,
+                    valueUsd: p.pnl?.currentValueUsd || 0
+                }))
+            },
+            filtered: {
+                count: filteredPositions.length,
+                positions: filteredPositions.map(p => ({
+                    symbol: p.symbol,
+                    valueUsd: p.pnl?.currentValueUsd || 0
+                }))
+            },
+            filter: {
+                minValueUsd: 1.0,
+                hiddenPositions: positionsWithPnL.length - filteredPositions.length
+            },
+            message: 'Positions under $1 USD value are automatically hidden'
+        });
+        
+    } catch (error) {
+        console.error('❌ Filter test error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 AlphaBot BLOCKCHAIN Server running on http://0.0.0.0:${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}`);
     console.log(`💰 REAL Balance: http://localhost:${PORT}/api/custodial/balance`);
     console.log(`📊 REAL Positions: http://localhost:${PORT}/api/positions/blockchain/demo`);
     console.log(`🔗 Analysis: http://localhost:${PORT}/api/blockchain/analysis/demo`);
-    console.log(`✅ Ready with 100% REAL BLOCKCHAIN DATA!`);
+    console.log(`💎 FILTER TEST: http://localhost:${PORT}/api/positions/filter-test/toto`);
+    console.log(`✅ Ready with 100% REAL BLOCKCHAIN DATA + $1 Position Filter!`);
 });
