@@ -605,11 +605,12 @@ app.get('/api/auto-trading/:userId', (req, res) => {
         res.json({
             success: true,
             settings: settings || {
-                enabled: false,
-                amount_sol: 0.025,
-                max_mcap: 1000000,
-                stop_loss: 50,
-                take_profit: 200
+                auto_trade_enabled: 0,
+                trade_amount: 0.1,
+                max_daily_trades: 5,
+                custom_sell_target: 4.0,
+                stop_loss_percent: 20.0,
+                strategies: 'trenches'
             }
         });
     });
@@ -620,30 +621,53 @@ app.post('/api/auto-trading/:userId', (req, res) => {
     const { userId } = req.params;
     const settings = req.body;
     
+    console.log('💾 Updating auto-trade settings for user:', userId);
+    console.log('🎯 New settings:', settings);
+    
     const query = `
         INSERT OR REPLACE INTO auto_trade_settings 
-        (user_id, enabled, amount_sol, max_mcap, stop_loss, take_profit, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (
+            user_id, auto_trade_enabled, trade_amount, max_daily_trades, 
+            custom_sell_target, stop_loss_percent, telegram_username, 
+            strategies, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
     
     db.run(query, [
         userId,
-        settings.enabled,
-        settings.amount_sol,
-        settings.max_mcap,
-        settings.stop_loss,
-        settings.take_profit
+        settings.enabled ? 1 : 0,
+        settings.tradeAmount || 0.1,
+        settings.maxDailyTrades || 5,
+        settings.customSellTarget || 4.0,
+        settings.stopLossPercent || 20.0,
+        settings.telegramUsername || '',
+        settings.strategy || 'trenches'
     ], function(err) {
         if (err) {
+            console.error('❌ Error saving auto-trade settings:', err);
             return res.status(500).json({
                 success: false,
                 error: err.message
             });
         }
         
+        console.log('✅ Auto-trade settings saved successfully for user:', userId);
+        console.log('🎯 Trenches Mode configured: 50% at 2x, 50% at', settings.customSellTarget + 'x');
+        console.log('🛑 Stop Loss set to:', settings.stopLossPercent + '%');
+        
         res.json({
             success: true,
-            message: 'Settings updated'
+            message: 'Auto-trading settings updated successfully',
+            data: {
+                userId: userId,
+                enabled: settings.enabled,
+                tradeAmount: settings.tradeAmount,
+                maxDailyTrades: settings.maxDailyTrades,
+                customSellTarget: settings.customSellTarget,
+                stopLossPercent: settings.stopLossPercent,
+                strategy: settings.strategy
+            }
         });
     });
 });

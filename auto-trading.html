@@ -1383,30 +1383,37 @@
                 if (!this.currentWallet) return;
 
                 try {
-                    const response = await fetch(`/api/auto-trade/settings/${this.currentWallet.userId}`);
+                    const response = await fetch(`/api/auto-trading/${this.currentWallet.userId}`);
                     const result = await response.json();
 
                     if (result.success && result.settings) {
                         const settings = result.settings;
                         
-                        // Update UI with settings
+                        // 🎯 Update UI with ALL settings including new fields
                         const toggle = document.getElementById('auto-trade-toggle');
                         const amountInput = document.getElementById('auto-trade-amount');
                         const maxTradesInput = document.getElementById('auto-max-trades');
-                        const statusDiv = document.getElementById('auto-trade-status');
+                        const sellTargetInput = document.getElementById('sell-target');
+                        const stopLossInput = document.getElementById('stop-loss');
                         const saveBtn = document.getElementById('save-auto-settings-btn');
-                        // Test button reference removed
 
                         if (toggle) toggle.checked = settings.auto_trade_enabled === 1;
-                        if (amountInput) amountInput.value = settings.trade_amount || 0.05;
+                        if (amountInput) amountInput.value = settings.trade_amount || 0.1;
                         if (maxTradesInput) maxTradesInput.value = settings.max_daily_trades || 5;
+                        if (sellTargetInput) sellTargetInput.value = `${settings.custom_sell_target || 4}x`;
+                        if (stopLossInput) stopLossInput.value = settings.stop_loss_percent || 20;
                         
                         this.updateAutoTradeStatus();
                         
                         if (saveBtn) saveBtn.disabled = false;
-                        if (testBtn) testBtn.disabled = false;
 
-                        console.log('✅ Auto-trade settings loaded');
+                        console.log('✅ Auto-trade settings loaded:', {
+                            enabled: settings.auto_trade_enabled === 1,
+                            amount: settings.trade_amount,
+                            maxTrades: settings.max_daily_trades,
+                            sellTarget: `${settings.custom_sell_target}x`,
+                            stopLoss: `${settings.stop_loss_percent}%`
+                        });
                     }
                 } catch (error) {
                     console.error('❌ Error loading auto-trade settings:', error);
@@ -1435,21 +1442,52 @@
                 }
 
                 try {
+                    // 🎯 CAPTURE ALL FORM FIELDS FOR COMPLETE AUTO-TRADING CONFIGURATION
                     const toggle = document.getElementById('auto-trade-toggle');
                     const amountInput = document.getElementById('auto-trade-amount');
                     const maxTradesInput = document.getElementById('auto-max-trades');
+                    const sellTargetInput = document.getElementById('sell-target');
+                    const stopLossInput = document.getElementById('stop-loss');
+
+                    // 📋 Validate all required fields exist
+                    if (!toggle || !amountInput || !maxTradesInput || !sellTargetInput || !stopLossInput) {
+                        this.showNotification('❌ Missing required form fields', 'error');
+                        return;
+                    }
+
+                    // 🎯 Parse and validate sell target (accept formats like: 2x, 3x, 4x, 10x, etc.)
+                    const sellTargetValue = sellTargetInput.value.trim();
+                    let sellTargetMultiplier = 4; // Default 4x if invalid
+
+                    if (sellTargetValue) {
+                        const match = sellTargetValue.match(/^(\d+(?:\.\d+)?)x?$/i);
+                        if (match) {
+                            sellTargetMultiplier = parseFloat(match[1]);
+                        }
+                    }
 
                     const settings = {
                         userId: this.currentWallet.userId,
                         enabled: toggle.checked,
-                        tradeAmount: parseFloat(amountInput.value),
-                        maxDailyTrades: parseInt(maxTradesInput.value),
-                        telegramUsername: this.currentWallet.telegramUsername
+                        tradeAmount: parseFloat(amountInput.value) || 0.1,
+                        maxDailyTrades: parseInt(maxTradesInput.value) || 5,
+                        customSellTarget: sellTargetMultiplier,
+                        stopLossPercent: parseFloat(stopLossInput.value) || 20,
+                        telegramUsername: this.currentWallet.telegramUsername,
+                        strategy: 'trenches' // Trenches Mode strategy
                     };
 
-                    console.log('💾 Saving auto-trade settings:', settings);
+                    console.log('💾 Saving COMPLETE auto-trade settings:', settings);
+                    console.log('🎯 Custom Sell Target:', `${sellTargetMultiplier}x`);
+                    console.log('🛑 Stop Loss:', `${settings.stopLossPercent}%`);
 
-                    const response = await fetch('/api/auto-trade/configure', {
+                    // 🚀 Show loading state
+                    const saveBtn = document.getElementById('save-auto-settings-btn');
+                    const originalHTML = saveBtn.innerHTML;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                    saveBtn.disabled = true;
+
+                    const response = await fetch(`/api/auto-trading/${this.currentWallet.userId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(settings)
@@ -1458,18 +1496,36 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        this.showNotification('✅ Auto-trading settings saved successfully!', 'success');
+                        // 🎉 SUCCESS: Show confirmation banner AND notification
+                        this.showSuccessBanner('⚡ Auto-Trading Settings Saved Successfully!');
+                        this.showNotification('✅ All settings saved and ready for automation!', 'success');
+                        
+                        // 🎯 Show strategy confirmation
+                        setTimeout(() => {
+                            this.showNotification(`🎯 Trenches Mode: 50% at 2x, 50% at ${sellTargetMultiplier}x | Stop Loss: ${settings.stopLossPercent}%`, 'info');
+                        }, 1500);
                         
                         if (toggle.checked) {
-                            this.showNotification('🚀 AUTO-TRADING IS NOW LIVE! Bot will trade when signals arrive.', 'warning');
+                            setTimeout(() => {
+                                this.showNotification('🚀 AUTO-TRADING IS NOW LIVE! Bot will trade when signals arrive.', 'warning');
+                            }, 3000);
                         }
                     } else {
                         this.showNotification(`❌ Failed to save settings: ${result.error}`, 'error');
                     }
 
+                    // 🔄 Reset button state
+                    saveBtn.innerHTML = originalHTML;
+                    saveBtn.disabled = false;
+
                 } catch (error) {
                     console.error('❌ Error saving auto-trade settings:', error);
                     this.showNotification('❌ Error saving auto-trade settings', 'error');
+                    
+                    // 🔄 Reset button state on error
+                    const saveBtn = document.getElementById('save-auto-settings-btn');
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Auto-Trading Settings';
+                    saveBtn.disabled = false;
                 }
             }
 
@@ -1492,6 +1548,63 @@
                 // This would trigger the automation system
                 console.log('🧪 Test automation signal:', testSignal);
                 this.showNotification('✅ Automation test completed - check console for details', 'success');
+            }
+
+            showSuccessBanner(message) {
+                // 🎉 CREATE SUCCESS BANNER AT TOP OF CONFIGURATION SECTION
+                const saveBtn = document.getElementById('save-auto-settings-btn');
+                const configSection = saveBtn ? saveBtn.closest('.card') : 
+                                    document.querySelector('main .card:nth-child(4)');
+                
+                if (!configSection) {
+                    console.warn('⚠️ Could not find configuration section for success banner');
+                    return;
+                }
+
+                // 🗑️ Remove any existing success banner
+                const existingBanner = configSection.querySelector('.success-banner');
+                if (existingBanner) {
+                    existingBanner.remove();
+                }
+
+                // 🎯 Create new success banner
+                const banner = document.createElement('div');
+                banner.className = 'success-banner bg-green-600 bg-opacity-20 border border-green-500 rounded-lg p-4 mb-6 animate-pulse';
+                banner.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <div>
+                                <div class="text-green-300 font-semibold">${message}</div>
+                                <div class="text-green-400 text-sm">Your configuration has been saved and is ready for automated trading.</div>
+                            </div>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-green-400 hover:text-green-300 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                // 📍 Insert banner at the top of configuration section (after heading)
+                const heading = configSection.querySelector('h2');
+                if (heading) {
+                    heading.insertAdjacentElement('afterend', banner);
+                } else {
+                    configSection.insertBefore(banner, configSection.firstChild);
+                }
+
+                // ⏰ Auto-remove banner after 10 seconds
+                setTimeout(() => {
+                    if (banner && banner.parentElement) {
+                        banner.style.transition = 'opacity 0.5s ease-out';
+                        banner.style.opacity = '0';
+                        setTimeout(() => banner.remove(), 500);
+                    }
+                }, 10000);
+
+                console.log('🎉 Success banner displayed for settings save');
             }
 
             showNotification(message, type = 'info') {
