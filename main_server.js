@@ -966,14 +966,15 @@ app.post('/api/custodial/balance', async (req, res) => {
                 // Get real balance using data provider
                 const balanceData = await dataProvider.getWalletBalance(wallet.public_key, true);
                 
-                console.log('💰 Balance refreshed:', balanceData.balanceSol, 'SOL');
+                console.log('💰 Balance refreshed:', balanceData.solBalance, 'SOL');
                 
                 res.json({
                     success: true,
-                    balance: balanceData.balanceSol,
-                    balanceUsd: balanceData.balanceUsd,
+                    balance: parseFloat(balanceData.solBalance) || 0,
+                    balanceUsd: balanceData.balanceUsd || '$0.00',
                     publicKey: wallet.public_key,
-                    lastUpdated: new Date().toISOString()
+                    lastUpdated: new Date().toISOString(),
+                    tokenCount: balanceData.tokenCount || 0
                 });
                 
             } catch (balanceError) {
