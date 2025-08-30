@@ -365,43 +365,20 @@
 
             </div>
 
-            <!-- TEST TRADING -->
+            <!-- QUICK ACTIONS -->
             <div class="card p-8 mb-8 fade-in">
                 <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-                    <i class="fas fa-flask text-yellow-500 mr-3"></i>
-                    Test Automated Trading
+                    <i class="fas fa-coins text-purple-500 mr-3"></i>
+                    Quick Actions
                 </h2>
                 
-                <div class="bg-yellow-900 bg-opacity-20 rounded-lg p-6 mb-6 border border-yellow-800">
-                    <div class="flex items-start space-x-3">
-                        <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
-                        <div class="text-sm text-yellow-200">
-                            <div class="font-semibold mb-1">🚨 MAINNET LIVE TRADING MODE</div>
-                            <p>⚠️ <strong>REAL MONEY TRADING:</strong> This system is connected to Solana MAINNET. 
-                            All trades use real SOL and real tokens. Safety limits: 0.01-1.0 SOL per trade.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <button id="test-trade-btn" class="btn-warning w-full py-4 rounded-xl text-white font-semibold text-lg" disabled>
-                        <i class="fas fa-play mr-2"></i>Execute Test Trade
-                        <div class="text-sm opacity-75 mt-1">Simulates buying a token with your configured strategy</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="https://www.mexc.com/es/acquisition/custom-sign-up?shareCode=mexc-15AJc" target="_blank" class="bg-purple-600 hover:bg-purple-700 py-4 rounded-xl text-white font-semibold flex items-center justify-center transition-all duration-300 hover:shadow-purple-500/25">
+                        <i class="fas fa-coins mr-2"></i>Buy SOL on MEXC
+                    </a>
+                    <button id="refresh-balance-btn" class="bg-gray-600 hover:bg-gray-700 py-4 rounded-xl text-white font-semibold">
+                        <i class="fas fa-sync mr-2"></i>Refresh Balance
                     </button>
-                    
-                    <button id="simple-test-btn" class="bg-purple-600 hover:bg-purple-700 w-full py-3 rounded-xl text-white font-semibold" disabled>
-                        <i class="fas fa-vial mr-2"></i>Simple Test (Debug)
-                        <div class="text-sm opacity-75 mt-1">Quick test with console logging</div>
-                    </button>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <a href="https://www.mexc.com/es/acquisition/custom-sign-up?shareCode=mexc-15AJc" target="_blank" class="bg-purple-600 hover:bg-purple-700 py-3 rounded-xl text-white font-semibold flex items-center justify-center transition-all duration-300 hover:shadow-purple-500/25">
-                            <i class="fas fa-coins mr-2"></i>Buy Real SOL on MEXC
-                        </a>
-                        <button id="refresh-balance-btn" class="bg-gray-600 hover:bg-gray-700 py-3 rounded-xl text-white font-semibold">
-                            <i class="fas fa-sync mr-2"></i>Refresh Balance
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -409,19 +386,8 @@
             <div class="card p-8 mb-8 fade-in">
                 <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
                     <i class="fas fa-robot text-green-500 mr-3"></i>
-                    🚀 MAINNET Automated Trading
+                    Automated Trading
                 </h2>
-                
-                <div class="bg-red-900 bg-opacity-30 rounded-lg p-6 mb-6 border border-red-700">
-                    <div class="flex items-start space-x-3">
-                        <i class="fas fa-exclamation-triangle text-red-400 mt-1"></i>
-                        <div class="text-sm text-red-200">
-                            <div class="font-semibold mb-1">⚠️ REAL MONEY AUTOMATION</div>
-                            <p>When enabled, the bot will automatically execute trades with your REAL SOL when Telegram signals are detected. 
-                            This is LIVE MAINNET trading - proceed with caution!</p>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Auto-Trading Toggle -->
@@ -437,7 +403,7 @@
                         </div>
                         
                         <div id="auto-trade-status" class="text-sm text-red-400 font-medium">
-                            🔴 DISABLED - Safe Mode
+                            🔴 DISABLED
                         </div>
                     </div>
 
@@ -484,9 +450,7 @@
                         <i class="fas fa-save mr-2"></i>Save Auto-Trading Settings
                     </button>
                     
-                    <button id="test-automation-btn" class="bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300" disabled>
-                        <i class="fas fa-flask mr-2"></i>Test Automation (Safe)
-                    </button>
+                    <!-- Test automation button removed -->
                 </div>
             </div>
 
@@ -551,17 +515,7 @@
                     trenchesStrategy.addEventListener('click', () => this.selectStrategy('trenches'));
                 }
 
-                // Test trading
-                const testTradeBtn = document.getElementById('test-trade-btn');
-                if (testTradeBtn) {
-                    testTradeBtn.addEventListener('click', () => this.executeTestTrade());
-                }
-
-                // Simple test (debug)
-                const simpleTestBtn = document.getElementById('simple-test-btn');
-                if (simpleTestBtn) {
-                    simpleTestBtn.addEventListener('click', () => this.executeSimpleTest());
-                }
+                // Test buttons removed - keeping only essential functionality
 
                 // Utility buttons
                 const buySolBtn = document.getElementById('buy-sol-btn');
@@ -603,7 +557,7 @@
                     saveAutoSettingsBtn.addEventListener('click', () => this.saveAutoTradeSettings());
                 }
 
-                const testAutomationBtn = document.getElementById('test-automation-btn');
+                // Test automation button removed
                 if (testAutomationBtn) {
                     testAutomationBtn.addEventListener('click', () => this.testAutomation());
                 }
@@ -804,16 +758,7 @@
                 // Update status
                 this.updateStatus();
                 
-                // Enable test trade buttons
-                const testTradeBtn = document.getElementById('test-trade-btn');
-                if (testTradeBtn) {
-                    testTradeBtn.disabled = false;
-                }
-                
-                const simpleTestBtn = document.getElementById('simple-test-btn');
-                if (simpleTestBtn) {
-                    simpleTestBtn.disabled = false;
-                }
+                // Test buttons removed - interface cleaned up
             }
 
             updateWalletDisplay() {
@@ -935,196 +880,9 @@
                 console.log(`🎯 Strategy selected: ${strategy}`);
             }
 
-            async executeTestTrade() {
-                console.log('🔧 DEBUG: executeTestTrade called');
-                console.log('🔧 DEBUG: isAuthenticated:', this.isAuthenticated);
-                console.log('🔧 DEBUG: currentWallet:', this.currentWallet);
-                
-                if (!this.isAuthenticated || !this.currentWallet) {
-                    this.showNotification('❌ Please authenticate your wallet first', 'error');
-                    return;
-                }
+            // Test trade function removed - keeping only automated trading functionality
 
-                const tradeAmount = parseFloat(document.getElementById('auto-trade-amount').value);
-                const sellTarget = document.getElementById('sell-target').value;
-                const stopLoss = parseFloat(document.getElementById('stop-loss').value);
-
-                console.log('🔧 DEBUG: tradeAmount:', tradeAmount);
-                console.log('🔧 DEBUG: sellTarget:', sellTarget);
-                console.log('🔧 DEBUG: stopLoss:', stopLoss);
-
-                if (tradeAmount < 0.001) {
-                    this.showNotification('❌ Minimum trade amount is 0.001 SOL', 'error');
-                    return;
-                }
-
-                // Ask for PIN confirmation for security
-                console.log('🔧 DEBUG: Asking for PIN...');
-                const pin = prompt('🔐 Enter your 6-digit PIN to confirm this trade:');
-                console.log('🔧 DEBUG: PIN entered, length:', pin ? pin.length : 'null');
-                
-                if (!pin || pin.length !== 6) {
-                    console.log('🔧 DEBUG: Invalid PIN, returning');
-                    this.showNotification('❌ Valid 6-digit PIN required to execute trade', 'error');
-                    return;
-                }
-
-                try {
-                    const testTradeBtn = document.getElementById('test-trade-btn');
-                    testTradeBtn.disabled = true;
-                    testTradeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Executing Trade...';
-
-                    // Create test signal
-                    const testSignal = {
-                        id: Date.now(),
-                        token_symbol: 'TEST',
-                        token_contract: 'So11111111111111111111111111111111111111112', // Wrapped SOL for testing
-                        entry_price: 100000 // 100k MC
-                    };
-
-                    // Create trade config
-                    const tradeConfig = {
-                        mode: this.selectedStrategy,
-                        amount: tradeAmount,
-                        sellTarget: sellTarget || '4',
-                        stopLoss: stopLoss
-                    };
-
-                    console.log('🔄 Executing test trade with config:', {
-                        userId: this.currentWallet.userId,
-                        tradeConfig: tradeConfig,
-                        testSignal: testSignal
-                    });
-
-                    const response = await fetch('/api/custodial/execute-trade', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: this.currentWallet.userId,
-                            pin: pin, // Use PIN entered by user for security
-                            signal: testSignal,
-                            tradeConfig: tradeConfig
-                        })
-                    });
-
-                    const result = await response.json();
-                    console.log('📡 Test trade response:', result);
-
-                    if (result.success) {
-                        this.showNotification('✅ Test trade executed successfully!', 'success');
-                        
-                        // 💰 POSITION-TRIGGERED: Refresh balance after successful trade
-                        await this.refreshBalance();
-                        await this.refreshTradingHistory();
-
-                    } else {
-                        this.showNotification(`❌ Trade failed: ${result.error}`, 'error');
-                    }
-
-                } catch (error) {
-                    console.error('❌ Test trade error:', error);
-                    this.showNotification('❌ Error executing test trade', 'error');
-                } finally {
-                    const testTradeBtn = document.getElementById('test-trade-btn');
-                    testTradeBtn.disabled = false;
-                    testTradeBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Test Trade';
-                }
-            }
-
-            async executeSimpleTest() {
-                console.log('🚀 Simple test started!');
-                console.log('🚀 isAuthenticated:', this.isAuthenticated);
-                console.log('🚀 currentWallet:', this.currentWallet);
-                
-                if (!this.isAuthenticated || !this.currentWallet) {
-                    alert('❌ Wallet not authenticated!');
-                    return;
-                }
-
-                const pin = prompt('Enter PIN for simple test:');
-                console.log('🚀 PIN entered:', pin ? `${pin.length} digits` : 'none');
-                
-                if (!pin) {
-                    alert('❌ No PIN entered!');
-                    return;
-                }
-
-                try {
-                    console.log('🚀 Making API call...');
-                    
-                    const testData = {
-                        userId: this.currentWallet.userId,
-                        pin: pin,
-                        signal: {
-                            id: Date.now(),
-                            token_symbol: 'SIMPLE_TEST',
-                            token_contract: 'So11111111111111111111111111111111111111112',
-                            entry_price: 50000
-                        },
-                        tradeConfig: {
-                            mode: 'trenches',
-                            amount: 0.01,
-                            sellTarget: '2',
-                            stopLoss: 10
-                        }
-                    };
-                    
-                    console.log('🚀 Sending data:', testData);
-
-                    const response = await fetch('/api/custodial/execute-trade', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(testData)
-                    });
-
-                    console.log('🚀 Response status:', response.status);
-                    
-                    const result = await response.json();
-                    console.log('🚀 Response data:', result);
-
-                    if (result.success) {
-                        console.log('🎯 TRADE SUCCESS! Full details:');
-                        console.log('📋 Trade ID:', result.data?.tradeId);
-                        console.log('💸 Fee Transaction:', result.data?.feeSignature);
-                        console.log('🔗 Trade Transaction:', result.data?.tradeSignature);
-                        console.log('💰 Amount:', result.data?.amount);
-                        console.log('📊 Full response:', result);
-                        
-                        // Create detailed success message with Solscan links
-                        const tradeId = result.data?.tradeId || 'Unknown';
-                        const feeHash = result.data?.feeSignature || 'No hash';
-                        const tradeHash = result.data?.tradeSignature || 'No hash';
-                        
-                        // Create Solscan links for MAINNET
-                        const feeExplorerUrl = `https://solscan.io/tx/${feeHash}`;
-                        const tradeExplorerUrl = `https://solscan.io/tx/${tradeHash}`;
-                        
-                        console.log('🔗 Fee Transaction on Solscan:', feeExplorerUrl);
-                        console.log('🔗 Trade Transaction on Solscan:', tradeExplorerUrl);
-                        
-                        const detailMsg = `✅ TRADE SUCCESS!\n\n` +
-                                        `🆔 Trade ID: ${tradeId}\n` +
-                                        `💸 Fee TX: ${feeHash.slice(0,20)}...\n` +
-                                        `🔗 Trade TX: ${tradeHash.slice(0,20)}...\n\n` +
-                                        `Check browser console for Solscan links!`;
-                        
-                        alert(detailMsg);
-                        this.showNotification('✅ Simple test executed successfully!', 'success');
-                        
-                        // 💰 POSITION-TRIGGERED: Refresh balance and history after trade
-                        await this.refreshBalance();
-                        await this.loadTradingHistory();
-                        
-                    } else {
-                        alert(`❌ Simple test FAILED: ${result.error}`);
-                        this.showNotification(`❌ Simple test failed: ${result.error}`, 'error');
-                    }
-
-                } catch (error) {
-                    console.error('🚀 Simple test error:', error);
-                    alert(`❌ Simple test ERROR: ${error.message}`);
-                }
-            }
+            // Simple test function removed - interface streamlined
 
             async refreshBalance() {
                 if (!this.isAuthenticated || !this.currentWallet) return;
@@ -1409,16 +1167,7 @@
                         this.updateWalletDisplay();
                         this.updateStatus();
                         
-                        // Enable test trade buttons
-                        const testTradeBtn = document.getElementById('test-trade-btn');
-                        if (testTradeBtn) {
-                            testTradeBtn.disabled = false;
-                        }
-                        
-                        const simpleTestBtn = document.getElementById('simple-test-btn');
-                        if (simpleTestBtn) {
-                            simpleTestBtn.disabled = false;
-                        }
+                        // Test buttons removed - interface streamlined
                         
                         // Refresh balance and trading history
                         this.refreshBalance();
@@ -1641,7 +1390,7 @@
                         const maxTradesInput = document.getElementById('auto-max-trades');
                         const statusDiv = document.getElementById('auto-trade-status');
                         const saveBtn = document.getElementById('save-auto-settings-btn');
-                        const testBtn = document.getElementById('test-automation-btn');
+                        // Test button reference removed
 
                         if (toggle) toggle.checked = settings.auto_trade_enabled === 1;
                         if (amountInput) amountInput.value = settings.trade_amount || 0.05;
@@ -1668,7 +1417,7 @@
                         statusDiv.innerHTML = '🟢 ENABLED - Auto-trading active!';
                         statusDiv.className = 'text-sm text-green-400 font-medium';
                     } else {
-                        statusDiv.innerHTML = '🔴 DISABLED - Safe mode';
+                        statusDiv.innerHTML = '🔴 DISABLED';
                         statusDiv.className = 'text-sm text-red-400 font-medium';
                     }
                 }
