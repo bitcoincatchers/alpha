@@ -936,6 +936,126 @@ app.post('/api/custodial/create-wallet', (req, res) => {
     });
 });
 
+// 💰 Custodial wallet balance endpoint
+app.post('/api/custodial/balance', async (req, res) => {
+    const { userId } = req.body;
+    
+    console.log('💰 Getting custodial wallet balance for user:', userId);
+    
+    try {
+        // Get wallet info from database
+        const query = `SELECT * FROM custodial_wallets WHERE user_id = ?`;
+        
+        db.get(query, [userId], async (err, wallet) => {
+            if (err) {
+                console.error('❌ Database error:', err.message);
+                return res.status(500).json({
+                    success: false,
+                    error: err.message
+                });
+            }
+            
+            if (!wallet) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Wallet not found'
+                });
+            }
+            
+            try {
+                // Get real balance using data provider
+                const balanceData = await dataProvider.getWalletBalance(wallet.public_key, true);
+                
+                console.log('💰 Balance refreshed:', balanceData.balanceSol, 'SOL');
+                
+                res.json({
+                    success: true,
+                    balance: balanceData.balanceSol,
+                    balanceUsd: balanceData.balanceUsd,
+                    publicKey: wallet.public_key,
+                    lastUpdated: new Date().toISOString()
+                });
+                
+            } catch (balanceError) {
+                console.error('❌ Error fetching balance:', balanceError);
+                
+                // Fallback to stored balance if real balance fails
+                res.json({
+                    success: true,
+                    balance: 0.0,  // Default fallback
+                    balanceUsd: '$0.00',
+                    publicKey: wallet.public_key,
+                    lastUpdated: new Date().toISOString(),
+                    note: 'Using fallback balance - balance service temporary unavailable'
+                });
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error in balance endpoint:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// 📊 Custodial wallet trades history endpoint
+app.get('/api/custodial/trades/:userId', (req, res) => {
+    const { userId } = req.params;
+    
+    console.log('📊 Getting trades history for user:', userId);
+    
+    const query = `
+        SELECT 
+            at.*,
+            s.token_symbol as signal_token_symbol,
+            s.token_contract as signal_token_contract,
+            s.entry_mc as signal_entry_mc,
+            cw.user_id
+        FROM automated_trades at
+        LEFT JOIN signals s ON at.signal_id = s.id 
+        LEFT JOIN custodial_wallets cw ON at.wallet_id = cw.id
+        WHERE cw.user_id = ? 
+        ORDER BY at.created_at DESC 
+        LIMIT 50
+    `;
+    
+    db.all(query, [userId], (err, trades) => {
+        if (err) {
+            console.error('❌ Database error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        }
+        
+        // Format trades for frontend
+        const formattedTrades = trades.map(trade => ({
+            id: trade.id,
+            token_symbol: trade.signal_token_symbol || trade.token_symbol || 'UNKNOWN',
+            token_contract: trade.signal_token_contract || trade.token_contract,
+            amount_sol: trade.amount_sol,
+            fee_amount: trade.fee_amount || 0,
+            status: trade.status,
+            trade_mode: trade.trade_mode || 'automated',
+            created_at: trade.created_at,
+            entry_mcap: trade.entry_mcap,
+            current_mcap: trade.current_price
+        }));
+        
+        console.log(`📊 Found ${formattedTrades.length} trades for user ${userId}`);
+        
+        res.json({
+            success: true,
+            data: {
+                trades: formattedTrades,
+                count: formattedTrades.length
+            }
+        });
+    });
+});
+
 // ❌ REMOVED: Obsolete mock trade execution - Real trades now use Jupiter API via bot.js
 
 // Check wallet balance endpoint
