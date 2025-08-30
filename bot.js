@@ -1114,6 +1114,34 @@ function startBot(token) {
         console.log('🚀 Bot launched successfully!');
         console.log('📡 Monitoring channels for trading signals...');
         
+        // 🤖 CREATE NEW BOT SESSION - Auto-hide previous positions
+        setTimeout(async () => {
+            try {
+                console.log('🤖 Creating new bot session...');
+                
+                const response = await fetch('http://localhost:3000/api/bot/new-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionType: 'bot_restart',
+                        notes: `Bot restarted at ${new Date().toISOString()} - previous positions auto-hidden`
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ New bot session created:', result.session.id);
+                    console.log('👁️ Previous positions automatically moved to hidden');
+                } else {
+                    console.log('⚠️ Could not create new session:', result.error);
+                }
+                
+            } catch (error) {
+                console.log('⚠️ Error creating bot session:', error.message);
+            }
+        }, 3000); // Wait 3 seconds for server to be ready
+        
         // Graceful shutdown
         process.once('SIGINT', () => {
             console.log('🛑 Received SIGINT, stopping bot...');

@@ -30,6 +30,11 @@ class PositionManager {
     constructor() {
         // 💾 Database instance for automated_trades queries
         this.db = db;
+        
+        // 🤖 BOT SESSION TRACKING - Cache current session
+        this.currentBotSession = null;
+        this.sessionCacheExpiry = null;
+        
         // 📊 POSITION TRACKING CONFIGURATION
         this.config = {
             // P&L calculation settings
@@ -98,6 +103,41 @@ class PositionManager {
         } catch (error) {
             console.error('❌ PositionManager error:', error);
             throw error;
+        }
+    }
+
+    /**
+     * 🤖 GET CURRENT BOT SESSION
+     */
+    async _getCurrentBotSession() {
+        try {
+            // Cache session for 5 minutes to avoid repeated queries
+            const now = Date.now();
+            if (this.currentBotSession && this.sessionCacheExpiry && now < this.sessionCacheExpiry) {
+                return this.currentBotSession;
+            }
+            
+            const query = `SELECT * FROM bot_sessions ORDER BY session_start DESC LIMIT 1`;
+            
+            const session = await new Promise((resolve, reject) => {
+                this.db.get(query, [], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                });
+            });
+            
+            // Cache result for 5 minutes
+            this.currentBotSession = session || { id: 1, session_start: new Date().toISOString() };
+            this.sessionCacheExpiry = now + (5 * 60 * 1000); // 5 minutes
+            
+            console.log(`🤖 Current bot session: ${this.currentBotSession.id} (started: ${this.currentBotSession.session_start})`);
+            
+            return this.currentBotSession;
+            
+        } catch (error) {
+            console.error('❌ Error getting current bot session:', error);
+            // Fallback to session 1
+            return { id: 1, session_start: new Date().toISOString() };
         }
     }
 
@@ -404,12 +444,107 @@ class PositionManager {
     /**
      * 🏗️ GET BLOCKCHAIN POSITIONS
      */
-    async _getBlockchainPositions(walletAddress) {
+    async _getBlockchainPositions(walletAddress, userId = 'toto') {
         try {
             const positionsData = await dataProvider.getPositionsData(walletAddress);
-            return positionsData.positions || [];
+            const allPositions = positionsData.positions || [];
+            
+            // 🤖 Check if bot session filtering is active
+            const sessionRestartMarker = await this._checkSessionRestartMarker();
+            
+            if (!sessionRestartMarker) {
+                // No session filtering - return all positions
+                return allPositions;
+            }
+            
+            console.log(`🤖 Session filtering active - filtering positions from before ${sessionRestartMarker.hidden_at}`);
+            
+            // 🎯 Only show positions that correspond to signals from current session
+            // OR positions that were acquired after bot restart
+            const currentSession = await this._getCurrentBotSession();
+            
+            // Get contracts from current session signals
+            const currentSessionSignals = await this._getCurrentSessionContracts(currentSession.id);
+            
+            // Filter positions: only show if they match current session signals
+            const filteredPositions = allPositions.filter(position => {
+                const contract = position.contractAddress;
+                
+                // Check if this contract has a signal in current session
+                const hasCurrentSessionSignal = currentSessionSignals.includes(contract);
+                
+                if (hasCurrentSessionSignal) {
+                    console.log(`✅ Keeping position ${position.symbol} - has signal in current session`);
+                    return true;
+                } else {
+                    console.log(`👁️ Filtering out position ${position.symbol} - from previous session`);
+                    return false;
+                }
+            });
+            
+            console.log(`🎯 Filtered positions: ${filteredPositions.length}/${allPositions.length} (session ${currentSession.id})`);
+            
+            return filteredPositions;
+            
         } catch (error) {
             console.error('❌ Error getting blockchain positions:', error);
+            return [];
+        }
+    }
+    
+    /**
+     * 🤖 Check if session restart marker exists
+     */
+    async _checkSessionRestartMarker() {
+        try {
+            const query = `
+                SELECT * FROM hidden_positions 
+                WHERE user_id = 'auto-session-restart' 
+                AND contract_address = 'ALL_EXISTING_POSITIONS'
+                ORDER BY hidden_at DESC 
+                LIMIT 1
+            `;
+            
+            return await new Promise((resolve, reject) => {
+                this.db.get(query, [], (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                });
+            });
+            
+        } catch (error) {
+            console.error('❌ Error checking session restart marker:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * 🎯 Get contracts from current session signals
+     */
+    async _getCurrentSessionContracts(sessionId) {
+        try {
+            const query = `
+                SELECT DISTINCT token_contract 
+                FROM signals 
+                WHERE bot_session_id >= ? 
+                AND status = 'active'
+                AND token_contract IS NOT NULL
+            `;
+            
+            const rows = await new Promise((resolve, reject) => {
+                this.db.all(query, [sessionId], (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows || []);
+                });
+            });
+            
+            const contracts = rows.map(row => row.token_contract);
+            console.log(`🎯 Current session contracts (${sessionId}):`, contracts.length);
+            
+            return contracts;
+            
+        } catch (error) {
+            console.error('❌ Error getting current session contracts:', error);
             return [];
         }
     }
@@ -419,16 +554,54 @@ class PositionManager {
      */
     async _getDatabasePositions(userId) {
         try {
-            // This would typically query your SQLite database
-            // For now, returning empty array - to be implemented based on your DB structure
-            console.log(`📊 Getting database positions for user ${userId}`);
+            console.log(`📊 Getting database positions for user ${userId} (session-aware)`);
             
-            // TODO: Implement database query for:
-            // - Pending limit orders
-            // - Filled orders that aren't reflected in blockchain yet
-            // - Historical position data
+            // 🤖 Get current bot session
+            const currentSession = await this._getCurrentBotSession();
             
-            return [];
+            // 📊 Query signals from current session only
+            const signalQuery = `
+                SELECT DISTINCT 
+                    s.*,
+                    hp.id as is_hidden
+                FROM signals s
+                LEFT JOIN hidden_positions hp ON (
+                    hp.contract_address = s.token_contract 
+                    AND (hp.user_id = ? OR hp.user_id = 'auto-session')
+                )
+                WHERE s.status = 'active' 
+                AND s.bot_session_id >= ?
+                AND hp.id IS NULL
+                ORDER BY s.created_at DESC
+            `;
+            
+            const signals = await new Promise((resolve, reject) => {
+                this.db.all(signalQuery, [userId, currentSession.id], (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows || []);
+                });
+            });
+            
+            console.log(`📊 Found ${signals.length} signals from current bot session (ID: ${currentSession.id})`);
+            
+            // 🎯 Convert signals to position format for tracking
+            const dbPositions = signals.map(signal => ({
+                id: `signal-${signal.id}`,
+                symbol: signal.token_symbol,
+                contractAddress: signal.token_contract,
+                type: 'Signal Position',
+                status: 'tracking',
+                entryMcap: signal.entry_mc || 0,
+                signalId: signal.id,
+                signalDate: signal.created_at,
+                botSession: currentSession.id,
+                source: 'database-signal',
+                priority: 2
+            }));
+            
+            console.log(`🎯 Converted ${dbPositions.length} signals to trackable positions`);
+            
+            return dbPositions;
             
         } catch (error) {
             console.error('❌ Error getting database positions:', error);

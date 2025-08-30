@@ -744,44 +744,56 @@ app.post('/api/signals/save', (req, res) => {
             }
         });
 
-        // Insert signal into database with links
-        const query = `
-            INSERT INTO signals (
-                token_symbol, 
-                token_contract, 
-                entry_mc, 
-                raw_message,
-                dexscreener_link,
-                chart_link
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        `;
+        // Get current bot session before inserting
+        const getCurrentSession = `SELECT id FROM bot_sessions ORDER BY session_start DESC LIMIT 1`;
         
-        const params = [
-            token_symbol.toUpperCase(),
-            token_contract,
-            entry_mc || 0,
-            raw_message || '',
-            dexscreener_link || null,
-            chart_link || null
-        ];
-
-        db.run(query, params, function(err) {
-            if (err) {
-                console.error('❌ Error saving signal:', err);
-                return res.status(500).json({
-                    success: false,
-                    error: err.message
-                });
-            }
-
-            console.log(`✅ Signal saved successfully: ${token_symbol} (ID: ${this.lastID})`);
+        db.get(getCurrentSession, [], (sessionErr, sessionRow) => {
+            const currentSessionId = sessionRow ? sessionRow.id : 1;
             
-            res.json({
-                success: true,
-                signalId: this.lastID,
-                message: `Signal ${token_symbol} saved successfully`
+            console.log(`🤖 Assigning signal to bot session: ${currentSessionId}`);
+            
+            // Insert signal into database with session tracking
+            const query = `
+                INSERT INTO signals (
+                    token_symbol, 
+                    token_contract, 
+                    entry_mc, 
+                    raw_message,
+                    dexscreener_link,
+                    chart_link,
+                    bot_session_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            
+            const params = [
+                token_symbol.toUpperCase(),
+                token_contract,
+                entry_mc || 0,
+                raw_message || '',
+                dexscreener_link || null,
+                chart_link || null,
+                currentSessionId
+            ];
+
+            db.run(query, params, function(err) {
+                if (err) {
+                    console.error('❌ Error saving signal:', err);
+                    return res.status(500).json({
+                        success: false,
+                        error: err.message
+                    });
+                }
+
+                console.log(`✅ Signal saved successfully: ${token_symbol} (ID: ${this.lastID}, Session: ${currentSessionId})`);
+                
+                res.json({
+                    success: true,
+                    signalId: this.lastID,
+                    botSessionId: currentSessionId,
+                    message: `Signal ${token_symbol} saved successfully to session ${currentSessionId}`
+                });
             });
-        });
+        }); // Close session query callback
 
     } catch (error) {
         console.error('❌ Error processing signal save:', error);
@@ -1757,6 +1769,123 @@ app.get('/api/positions/live/:userId', async (req, res) => {
     }
 });
 
+// 🤖 BOT SESSION MANAGEMENT - Track bot restarts and position sessions
+app.get('/api/bot/current-session', (req, res) => {
+    const query = `SELECT * FROM bot_sessions ORDER BY session_start DESC LIMIT 1`;
+    
+    db.get(query, [], (err, session) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        }
+        
+        res.json({
+            success: true,
+            session: session || { id: 1, session_start: new Date().toISOString(), session_type: 'default' }
+        });
+    });
+});
+
+app.post('/api/bot/new-session', async (req, res) => {
+    try {
+        const { sessionType = 'manual_restart', notes = 'Bot restarted - new session created' } = req.body;
+        
+        console.log('🚀 Creating new bot session:', sessionType);
+        
+        // Get current session first
+        const getCurrentSession = `SELECT id FROM bot_sessions ORDER BY session_start DESC LIMIT 1`;
+        
+        db.get(getCurrentSession, [], (err, currentSession) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            
+            const currentSessionId = currentSession ? currentSession.id : 1;
+            
+            // Auto-hide positions from previous sessions
+            console.log('👁️ Auto-hiding positions from previous sessions...');
+            
+            // Hide ALL existing positions when bot restarts - they become "old session" positions
+            console.log('👁️ Hiding ALL existing positions from previous session...');
+            
+            // First get current blockchain positions to hide them all
+            const getUserWallet = `SELECT public_key FROM custodial_wallets WHERE user_id = ?`;
+            
+            // Hide positions for all users when bot restarts
+            const hideAllExistingPositions = `
+                INSERT OR IGNORE INTO hidden_positions (user_id, contract_address, symbol, hidden_at)
+                VALUES ('auto-session-restart', 'ALL_EXISTING_POSITIONS', 'SESSION_RESTART_MARKER', datetime('now'))
+            `;
+            
+            // Also hide specific signals from previous sessions
+            const hideOldSignals = `
+                INSERT OR IGNORE INTO hidden_positions (user_id, contract_address, symbol, hidden_at)
+                SELECT DISTINCT 'auto-session', s.token_contract, s.token_symbol, datetime('now')
+                FROM signals s 
+                WHERE s.bot_session_id < ? 
+                AND s.status = 'active'
+                AND s.token_contract NOT IN (
+                    SELECT contract_address FROM hidden_positions 
+                    WHERE user_id = 'auto-session'
+                )
+            `;
+            
+            // First hide all existing positions marker
+            db.run(hideAllExistingPositions, [], (markerErr) => {
+                if (markerErr) {
+                    console.error('❌ Error creating session restart marker:', markerErr);
+                }
+            });
+            
+            db.run(hideOldSignals, [currentSessionId + 1], (hideErr) => {
+                if (hideErr) {
+                    console.error('❌ Error hiding old signals:', hideErr);
+                }
+                
+                // Create new session
+                const insertSession = `
+                    INSERT INTO bot_sessions (session_type, notes) 
+                    VALUES (?, ?)
+                `;
+                
+                db.run(insertSession, [sessionType, notes], function(sessionErr) {
+                    if (sessionErr) {
+                        return res.status(500).json({
+                            success: false,
+                            error: sessionErr.message
+                        });
+                    }
+                    
+                    const newSessionId = this.lastID;
+                    
+                    console.log('✅ New bot session created:', newSessionId);
+                    console.log('👁️ Previous positions auto-hidden');
+                    
+                    res.json({
+                        success: true,
+                        session: {
+                            id: newSessionId,
+                            session_type: sessionType,
+                            notes: notes,
+                            session_start: new Date().toISOString()
+                        },
+                        message: 'New session created, previous positions moved to hidden'
+                    });
+                });
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ Error creating new session:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 🚀 PROFIT TAKING ANALYSIS - Check for profit-taking opportunities
 // 👁️ HIDE/SHOW POSITION ENDPOINTS
 app.post('/api/positions/hide/:userId', async (req, res) => {
@@ -1843,33 +1972,95 @@ app.get('/api/positions/hidden/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         
-        console.log(`👁️ Getting hidden positions for user: ${userId}`);
+        console.log(`👁️ Getting hidden positions for user: ${userId} (including previous session)`);
         
-        const stmt = db.prepare(`
-            SELECT contract_address, symbol, hidden_at 
-            FROM hidden_positions 
-            WHERE user_id = ?
-            ORDER BY hidden_at DESC
-        `);
+        // Check if session restart marker exists
+        const sessionMarkerQuery = `
+            SELECT * FROM hidden_positions 
+            WHERE user_id = 'auto-session-restart' 
+            AND contract_address = 'ALL_EXISTING_POSITIONS'
+            ORDER BY hidden_at DESC 
+            LIMIT 1
+        `;
         
-        stmt.all([userId], (err, rows) => {
-            if (err) {
-                console.error('❌ Error getting hidden positions:', err);
-                return res.status(500).json({
-                    success: false,
-                    error: err.message
-                });
+        db.get(sessionMarkerQuery, [], async (markerErr, sessionMarker) => {
+            if (markerErr) {
+                console.error('❌ Error checking session marker:', markerErr);
+                return res.status(500).json({ success: false, error: markerErr.message });
             }
             
-            console.log(`✅ Found ${rows.length} hidden positions for user ${userId}`);
-            res.json({
-                success: true,
-                hiddenPositions: rows,
-                count: rows.length
-            });
+            if (sessionMarker) {
+                console.log(`🤖 Session restart detected - showing ALL previous blockchain positions as hidden`);
+                
+                try {
+                    // Get all blockchain positions and show them as hidden
+                    const walletAddress = '2zFDLDPeGgEs3TpsLm3eWWwjY7NSYqdqMkPGjFnHRCXv';
+                    const positionsData = await positionManager.getActivePositions(userId, walletAddress);
+                    
+                    // But we need the RAW blockchain positions, not the filtered ones
+                    const allBlockchainPositions = await dataProvider.getPositionsData(walletAddress);
+                    const allPositions = allBlockchainPositions.positions || [];
+                    
+                    // Convert blockchain positions to hidden format
+                    const hiddenPositions = allPositions.map(position => ({
+                        contract_address: position.contractAddress,
+                        symbol: position.symbol,
+                        hidden_at: sessionMarker.hidden_at,
+                        source: 'previous_session',
+                        amount: position.amount,
+                        balanceUsd: position.balanceUsd || '$0.00',
+                        type: 'Previous Session Position'
+                    }));
+                    
+                    console.log(`✅ Showing ${hiddenPositions.length} positions from previous session as hidden`);
+                    
+                    res.json({
+                        success: true,
+                        hiddenPositions: hiddenPositions,
+                        count: hiddenPositions.length,
+                        sessionInfo: {
+                            hasSessionRestart: true,
+                            restartedAt: sessionMarker.hidden_at,
+                            message: 'Showing all positions from before bot restart'
+                        }
+                    });
+                    
+                } catch (dataError) {
+                    console.error('❌ Error getting blockchain positions for hidden:', dataError);
+                    return res.status(500).json({ success: false, error: dataError.message });
+                }
+                
+            } else {
+                // No session restart - show normal hidden positions
+                const query = `
+                    SELECT contract_address, symbol, hidden_at 
+                    FROM hidden_positions 
+                    WHERE user_id = ?
+                    ORDER BY hidden_at DESC
+                `;
+                
+                db.all(query, [userId], (err, rows) => {
+                    if (err) {
+                        console.error('❌ Error getting hidden positions:', err);
+                        return res.status(500).json({
+                            success: false,
+                            error: err.message
+                        });
+                    }
+                    
+                    console.log(`✅ Found ${rows.length} normal hidden positions for user ${userId}`);
+                    res.json({
+                        success: true,
+                        hiddenPositions: rows,
+                        count: rows.length,
+                        sessionInfo: {
+                            hasSessionRestart: false,
+                            message: 'Showing manually hidden positions'
+                        }
+                    });
+                });
+            }
         });
-        
-        stmt.finalize();
         
     } catch (error) {
         console.error('❌ Error getting hidden positions:', error);
