@@ -1,0 +1,26 @@
+# 🐳 AlphaBot Development Container
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Install development tools
+RUN npm install -g nodemon pm2
+
+# Copy source code
+COPY . .
+
+# Copy development environment
+COPY .env.example .env
+
+# Create test database directory
+RUN mkdir -p data
+
+# Expose development port
+EXPOSE 3001
+
+# Development command
+CMD ["npm", "run", "dev:mock"]

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  alphabot-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - SIMULATION_MODE=true
+      - DEBUG_MODE=true
+      - PORT=3001
+    command: npm run dev:mock
+    
+volumes:
+  node_modules:

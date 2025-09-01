@@ -51,6 +51,14 @@ jspm_packages/
 # dotenv environment variables file
 .env
 .env.local
+.env.development
+.env.production
+
+# Test databases and files
+test_alphabot_signals.db
+test-wallet.json
+*.test.db
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local

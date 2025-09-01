@@ -15,7 +15,21 @@
     "restart": "pm2 restart ecosystem.config.cjs",
     "stop": "pm2 stop ecosystem.config.cjs",
     "logs": "pm2 logs --nostream",
-    "status": "pm2 list"
+    "status": "pm2 list",
+    
+    "dev:setup": "npm install && cp .env.example .env && echo '✅ Development setup complete! Edit .env file.'",
+    "dev:server": "PORT=3001 NODE_ENV=development nodemon main_server.js",
+    "dev:bot": "NODE_ENV=development SIMULATION_MODE=true node bot.js",
+    "dev:clean": "rm -f test_alphabot_signals.db && echo '🧹 Test database cleaned'",
+    "dev:logs": "pm2 logs --lines 50 | grep -E 'ERROR|WARN|DEBUG|TEST'",
+    "dev:test": "curl http://localhost:3001/api/positions/filter-test/testuser",
+    "dev:mock": "SIMULATION_MODE=true MOCK_TRADING=true npm run dev:server",
+    
+    "test:integration": "npm run dev:test && curl http://localhost:3001/api/debug/position/TEST",
+    "test:health": "curl http://localhost:3001/api/health",
+    "test:trading": "echo 'Trading tests - implement with your test framework'",
+    
+    "seed:test": "node scripts/seed-test-data.js"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.13",
