@@ -1,0 +1,13 @@
+name = "alphabot-trading-system"
+compatibility_date = "2024-09-02"
+pages_build_output_dir = "./dist"
+
+[env.production]
+name = "alphabot-trading-system"
+compatibility_date = "2024-09-02"
+
+[build]
+command = "npm run build"
+
+[vars]
+NODE_ENV = "production"
